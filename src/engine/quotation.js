@@ -1,0 +1,284 @@
+/**
+ * quotation.js — V2: Full quotation orchestrator.
+ * Adds: Margen de Ganancia, IVA, separated cost categories,
+ * uses unidades_por_paquete from DB for ream calculation.
+ */
+
+import { evaluateAllMachines } from './imposition.js';
+import {
+  calculatePaperCost,
+  calculatePlateCost,
+  calculateProcessCost,
+  getMachines,
+} from './pricing.js';
+
+/** Default profit margin and tax */
+const DEFAULT_MARGIN_PERCENT = 30;
+const IVA_PERCENT = 19;
+
+/**
+ * Generate a full quotation.
+ */
+export function generateQuotation(allData, params) {
+  const {
+    productType,
+    quantity,
+    pieceWidth,
+    pieceHeight,
+    interiorPages = 0,
+    interiorPaperCost = 0,
+    interiorUnitsPerPackage = 500,
+    coverPaperCost = 0,
+    coverUnitsPerPackage = 100,
+    numColors = 4,
+    hasLamination = false,
+    hasBinding = false,
+    bindingType = 'Anillado',
+    mermaPercent = 10,
+    marginPercent = DEFAULT_MARGIN_PERCENT,
+    manualPiecesPerSheet = null,
+  } = params;
+
+  const machines = getMachines(allData);
+  const isEditorial = productType === 'Libro' || productType === 'Agenda';
+  const isAgenda = productType === 'Agenda';
+
+  const breakdown = {
+    productType,
+    quantity,
+    dimensions: `${pieceWidth} × ${pieceHeight} cm`,
+    interior: null,
+    cover: null,
+    finishing: {},
+    costoPapel: 0,
+    costoProcesos: 0,
+    costoProduccion: 0,
+    margenGanancia: 0,
+    subtotalConMargen: 0,
+    iva: 0,
+    totalCost: 0,
+    costPerUnit: 0,
+  };
+
+  // ── Imposition (machine selection) — always runs ─────────────
+  const rankings = evaluateAllMachines(pieceWidth, pieceHeight, machines);
+  if (rankings.length === 0) {
+    breakdown.error = 'La pieza no cabe en ninguna máquina disponible.';
+    return breakdown;
+  }
+  const best = rankings[0];
+  // Override piecesPerSheet if user provided a manual value
+  const effectivePieces = manualPiecesPerSheet || best.imposition.piecesPerSheet;
+
+  // ══════════════════════════════════════════════════════════════
+  // RUTA A: AGENDA — costos batch desde la matriz Excel
+  // ══════════════════════════════════════════════════════════════
+  if (isAgenda) {
+    const pc = (name) => calculateProcessCost(allData, name, quantity).totalCost;
+
+    // Interior
+    const impresionInterior = pc('Impresión Interior');
+    const planchasInterior  = pc('Planchas');
+    const corteInterior     = pc('Corte Interior');
+    const anillo            = pc('Anillo');
+    const anillado          = pc('Anillado');
+
+    // Paper interior (calculado desde paquetes con las dimensiones reales)
+    const totalPageSides     = interiorPages * quantity;
+    const pageSidesPerSheet  = effectivePieces * 2;
+    const totalPressSheets   = Math.ceil(totalPageSides / pageSidesPerSheet);
+    const paperResult = calculatePaperCost(
+      totalPressSheets * effectivePieces,
+      effectivePieces,
+      interiorPaperCost || 25000,
+      interiorUnitsPerPackage,
+      mermaPercent
+    );
+
+    breakdown.interior = {
+      machine: best.machine.nombre,
+      piecesPerSheet: effectivePieces,
+      orientation: best.imposition.orientation,
+      layout: manualPiecesPerSheet ? `Manual: ${manualPiecesPerSheet}` : `${best.imposition.cols} × ${best.imposition.rows}`,
+      wastePercent: manualPiecesPerSheet ? '—' : best.imposition.wastePercent,
+      render: manualPiecesPerSheet ? null : best.imposition.render,
+      interiorPages,
+      totalPressSheets,
+      sheetsNeeded: paperResult.sheetsNeeded,
+      sheetsWithMerma: paperResult.sheetsWithMerma,
+      packages: paperResult.packages,
+      unitsPerPackage: paperResult.unitsPerPackage,
+      paperCost: paperResult.cost,
+      impresionCost: impresionInterior,
+      platesCost: planchasInterior,
+      platesDetail: `Planchas lote`,
+      cuttingCost: corteInterior,
+      anilloCost: anillo,
+      anilladoCost: anillado,
+      subtotal: paperResult.cost + impresionInterior + planchasInterior + corteInterior + anillo + anillado,
+      allMachineOptions: rankings.map((r) => ({
+        machine: r.machine.nombre,
+        piecesPerSheet: r.imposition.piecesPerSheet,
+        waste: r.imposition.wastePercent,
+        orientation: r.imposition.orientation,
+        render: r.imposition.render,
+      })),
+    };
+    breakdown.costoPapel    += paperResult.cost;
+    breakdown.costoProcesos += impresionInterior + planchasInterior + corteInterior + anillo + anillado;
+
+    // Tapa
+    const impresionTapa     = pc('Impresión Tapa');
+    const polilaminadoTapa  = pc('Polilaminado Tapa');
+    const cartonPiedra      = pc('Cartón Piedra');
+    const corteTapa         = pc('Corte Tapa');
+    const manoObra          = pc('Mano de Obra');
+
+    breakdown.cover = {
+      machine: best.machine.nombre,
+      piecesPerSheet: best.imposition.piecesPerSheet,
+      orientation: best.imposition.orientation,
+      layout: `${best.imposition.cols} × ${best.imposition.rows}`,
+      wastePercent: best.imposition.wastePercent,
+      paperCost: cartonPiedra,
+      impresionCost: impresionTapa,
+      polilaminadoCost: polilaminadoTapa,
+      cuttingCost: corteTapa,
+      manoObraCost: manoObra,
+      laminationCost: 0,
+      subtotal: impresionTapa + polilaminadoTapa + cartonPiedra + corteTapa + manoObra,
+    };
+    breakdown.costoPapel    += cartonPiedra;
+    breakdown.costoProcesos += impresionTapa + polilaminadoTapa + corteTapa + manoObra;
+
+    // Extras: papel espejo + intercalado
+    const impEspejo  = pc('Impresión Papel Espejo');
+    const papEspejo  = pc('Papel Espejo');
+    const poliEspejo = pc('Polilaminado Espejo');
+    const corEspejo  = pc('Corte Espejo');
+    const impInter   = pc('Impresión Intercalado');
+    const corInter   = pc('Corte Intercalado');
+
+    breakdown.agenda_extras = {
+      impresionEspejo: impEspejo,
+      papelEspejo: papEspejo,
+      polilaminadoEspejo: poliEspejo,
+      corteEspejo: corEspejo,
+      impresionIntercalado: impInter,
+      corteIntercalado: corInter,
+      subtotal: impEspejo + papEspejo + poliEspejo + corEspejo + impInter + corInter,
+    };
+    breakdown.costoPapel    += papEspejo;
+    breakdown.costoProcesos += impEspejo + poliEspejo + corEspejo + impInter + corInter;
+
+  // ══════════════════════════════════════════════════════════════
+  // RUTA B: LIBRO / FLYER — lógica original
+  // ══════════════════════════════════════════════════════════════
+  } else {
+    let totalPressSheets;
+    if (isEditorial) {
+      const totalPageSides = interiorPages * quantity;
+      const pageSidesPerSheet = best.imposition.piecesPerSheet * 2;
+      totalPressSheets = Math.ceil(totalPageSides / pageSidesPerSheet);
+    } else {
+      totalPressSheets = Math.ceil(quantity / best.imposition.piecesPerSheet);
+    }
+
+    const paperResult = calculatePaperCost(
+      totalPressSheets * best.imposition.piecesPerSheet,
+      best.imposition.piecesPerSheet,
+      interiorPaperCost || 25000,
+      interiorUnitsPerPackage,
+      mermaPercent
+    );
+    const plates  = calculatePlateCost(allData, numColors, quantity);
+    const cutting = calculateProcessCost(allData, 'Corte', quantity);
+
+    breakdown.interior = {
+      machine: best.machine.nombre,
+      piecesPerSheet: best.imposition.piecesPerSheet,
+      orientation: best.imposition.orientation,
+      layout: `${best.imposition.cols} × ${best.imposition.rows}`,
+      wastePercent: best.imposition.wastePercent,
+      render: best.imposition.render,
+      sheetsNeeded: paperResult.sheetsNeeded,
+      sheetsWithMerma: paperResult.sheetsWithMerma,
+      packages: paperResult.packages,
+      unitsPerPackage: paperResult.unitsPerPackage,
+      paperCost: paperResult.cost,
+      platesCost: plates.totalCost,
+      platesDetail: `${plates.platesNeeded} planchas × $${plates.unitCost.toLocaleString()}`,
+      cuttingCost: cutting.totalCost,
+      subtotal: paperResult.cost + plates.totalCost + cutting.totalCost,
+      allMachineOptions: rankings.map((r) => ({
+        machine: r.machine.nombre,
+        piecesPerSheet: r.imposition.piecesPerSheet,
+        waste: r.imposition.wastePercent,
+        orientation: r.imposition.orientation,
+        render: r.imposition.render,
+      })),
+    };
+    if (isEditorial) {
+      breakdown.interior.interiorPages = interiorPages;
+      breakdown.interior.totalPressSheets = totalPressSheets;
+    }
+    breakdown.costoPapel    += paperResult.cost;
+    breakdown.costoProcesos += plates.totalCost + cutting.totalCost;
+
+    if (isEditorial) {
+      const coverRankings = evaluateAllMachines(pieceWidth, pieceHeight, machines);
+      if (coverRankings.length > 0) {
+        const bestCover = coverRankings[0];
+        const coverSheets = calculatePaperCost(
+          quantity, bestCover.imposition.piecesPerSheet,
+          coverPaperCost || 55000, coverUnitsPerPackage, mermaPercent
+        );
+        const coverPlates = calculatePlateCost(allData, numColors, quantity);
+        const laminationCost = hasLamination
+          ? calculateProcessCost(allData, 'Laminado', quantity)
+          : { totalCost: 0 };
+
+        breakdown.cover = {
+          machine: bestCover.machine.nombre,
+          piecesPerSheet: bestCover.imposition.piecesPerSheet,
+          orientation: bestCover.imposition.orientation,
+          layout: `${bestCover.imposition.cols} × ${bestCover.imposition.rows}`,
+          wastePercent: bestCover.imposition.wastePercent,
+          render: bestCover.imposition.render,
+          sheetsNeeded: coverSheets.sheetsNeeded,
+          sheetsWithMerma: coverSheets.sheetsWithMerma,
+          packages: coverSheets.packages,
+          unitsPerPackage: coverSheets.unitsPerPackage,
+          paperCost: coverSheets.cost,
+          platesCost: coverPlates.totalCost,
+          laminationCost: laminationCost.totalCost,
+          subtotal: coverSheets.cost + coverPlates.totalCost + laminationCost.totalCost,
+        };
+        breakdown.costoPapel    += coverSheets.cost;
+        breakdown.costoProcesos += coverPlates.totalCost + laminationCost.totalCost;
+      }
+    }
+
+    if (hasBinding && isEditorial) {
+      const binding = calculateProcessCost(allData, bindingType, quantity);
+      breakdown.finishing.binding = {
+        type: bindingType,
+        unitCost: binding.unitCost,
+        totalCost: binding.totalCost,
+      };
+      breakdown.costoProcesos += binding.totalCost;
+    }
+  }
+
+  // ── COST SUMMARY (Producción + Margen + IVA) ─────────────────
+  breakdown.costoProduccion = breakdown.costoPapel + breakdown.costoProcesos;
+  breakdown.margenGanancia = Math.round(breakdown.costoProduccion * (marginPercent / 100));
+  breakdown.subtotalConMargen = breakdown.costoProduccion + breakdown.margenGanancia;
+  breakdown.iva = Math.round(breakdown.subtotalConMargen * (IVA_PERCENT / 100));
+  breakdown.totalCost = breakdown.subtotalConMargen + breakdown.iva;
+  breakdown.costPerUnit = Math.round(breakdown.totalCost / quantity);
+  breakdown.marginPercent = marginPercent;
+  breakdown.ivaPercent = IVA_PERCENT;
+
+  return breakdown;
+}
