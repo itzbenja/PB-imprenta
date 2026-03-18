@@ -7,7 +7,7 @@ export function renderForm(container, allData, onSubmit) {
   const tapaPapers      = (allData.supplies || []).filter(s => s.tipo_insumo === 'Papel Tapa');
   const talonarioPapers = (allData.supplies || []).filter(s => s.tipo_insumo === 'Papel Talonario');
   const defaultInterior = interiorPapers.find(p => p.gramaje === 75) || interiorPapers[0];
-  const defaultTapa     = tapaPapers[0];
+
 
   const interiorOpts = interiorPapers.length > 0
     ? interiorPapers.map((p, i) => `<option value="${i}">${p.nombre_insumo} ${p.gramaje ? p.gramaje + 'gr' : ''}</option>`).join('')
@@ -73,9 +73,12 @@ export function renderForm(container, allData, onSubmit) {
         <div class="form-group">
           <label for="talColores">Colores de impresión</label>
           <select id="talColores">
-            <option value="1">1 Color</option>
-            <option value="2">2 Colores</option>
-            <option value="4">Full Color</option>
+            <option value="1">1x0 — Negro una cara</option>
+            <option value="1" data-doble="1">1x1 — Negro doble cara</option>
+            <option value="2">2x0 — 2 colores una cara</option>
+            <option value="2" data-doble="1">2x2 — 2 colores doble cara</option>
+            <option value="4">4x0 — Full Color una cara</option>
+            <option value="4" data-doble="1">4x4 — Full Color doble cara</option>
           </select>
         </div>
         <div class="form-group">
@@ -124,9 +127,12 @@ export function renderForm(container, allData, onSubmit) {
         <div class="form-group">
           <label for="libColores">Colores de impresión</label>
           <select id="libColores">
-            <option value="1">1 Color</option>
-            <option value="2">2 Colores</option>
-            <option value="4" selected>Full Color</option>
+            <option value="1">1x0 — Negro una cara</option>
+            <option value="1" data-doble="1">1x1 — Negro doble cara</option>
+            <option value="2">2x0 — 2 colores una cara</option>
+            <option value="2" data-doble="1">2x2 — 2 colores doble cara</option>
+            <option value="4">4x0 — Full Color una cara</option>
+            <option value="4" data-doble="1" selected>4x4 — Full Color doble cara</option>
           </select>
         </div>
         <div class="form-group">
@@ -173,9 +179,12 @@ export function renderForm(container, allData, onSubmit) {
         <div class="form-group">
           <label for="flyerColores">Colores de impresión</label>
           <select id="flyerColores">
-            <option value="1">1 Color</option>
-            <option value="2">2 Colores</option>
-            <option value="4" selected>Full Color</option>
+            <option value="1">1x0 — Negro una cara</option>
+            <option value="1" data-doble="1">1x1 — Negro doble cara</option>
+            <option value="2">2x0 — 2 colores una cara</option>
+            <option value="2" data-doble="1">2x2 — 2 colores doble cara</option>
+            <option value="4">4x0 — Full Color una cara</option>
+            <option value="4" data-doble="1" selected>4x4 — Full Color doble cara</option>
           </select>
         </div>
         <div class="form-group">
@@ -194,12 +203,12 @@ export function renderForm(container, allData, onSubmit) {
       <!-- ── OPCIONES COMPARTIDAS ───────────────────────────────── -->
       <div class="shared-options">
         <div class="form-group">
-          <label for="marginPercent">Margen de Ganancia: <span id="marginValue">30</span>%</label>
-          <input type="range" id="marginPercent" min="0" max="100" value="30" />
+          <label for="marginPercent">Margen de Ganancia (%)</label>
+          <input type="number" id="marginPercent" min="0" max="100" value="30" />
         </div>
         <div class="form-group">
-          <label for="mermaPercent">Merma de papel: <span id="mermaValue">10</span>%</label>
-          <input type="range" id="mermaPercent" min="5" max="20" value="10" />
+          <label for="mermaPercent">Merma de papel (%)</label>
+          <input type="number" id="mermaPercent" min="5" max="20" value="10" />
         </div>
       </div>
 
@@ -256,18 +265,9 @@ export function renderForm(container, allData, onSubmit) {
   renderViasPapel(2);
   container.querySelector('#talVias').addEventListener('change', e => renderViasPapel(+e.target.value));
 
-  // ── Sliders compartidos ───────────────────────────────────────
+  // ── Inputs compartidos ───────────────────────────────────────
   const marginSlider = container.querySelector('#marginPercent');
-  container.querySelector('#marginValue').textContent = marginSlider.value;
-  marginSlider.addEventListener('input', () => {
-    container.querySelector('#marginValue').textContent = marginSlider.value;
-  });
-
-  const mermaSlider = container.querySelector('#mermaPercent');
-  container.querySelector('#mermaValue').textContent = mermaSlider.value;
-  mermaSlider.addEventListener('input', () => {
-    container.querySelector('#mermaValue').textContent = mermaSlider.value;
-  });
+  const mermaSlider  = container.querySelector('#mermaPercent');
 
   // ── Validación ────────────────────────────────────────────────
   function showError(inputId, msg) {
@@ -364,6 +364,7 @@ export function renderForm(container, allData, onSubmit) {
         pieceWidth:         parseFloat(container.querySelector('#talAncho').value),
         pieceHeight:        parseFloat(container.querySelector('#talLargo').value),
         numColors:          parseInt(container.querySelector('#talColores').value, 10),
+        doubleSided:        !!container.querySelector('#talColores').selectedOptions[0].dataset.doble,
         vias,
         terminaciones: {
           folio:          container.querySelector('#chkFolio').checked,
@@ -401,6 +402,7 @@ export function renderForm(container, allData, onSubmit) {
         pieceHeight:             parseFloat(container.querySelector('#libLargo').value),
         interiorPages:           parseInt(container.querySelector('#libPaginas').value, 10),
         numColors:               parseInt(container.querySelector('#libColores').value, 10),
+        doubleSided:             !!container.querySelector('#libColores').selectedOptions[0].dataset.doble,
         interiorPaperCost:       interior.costo_paquete,
         interiorUnitsPerPackage: interior.unidades_por_paquete,
         interiorSupplyId:        interior.id || null,
@@ -430,6 +432,7 @@ export function renderForm(container, allData, onSubmit) {
         pieceWidth:              parseFloat(container.querySelector('#flyerAncho').value),
         pieceHeight:             parseFloat(container.querySelector('#flyerLargo').value),
         numColors:               parseInt(container.querySelector('#flyerColores').value, 10),
+        doubleSided:             !!container.querySelector('#flyerColores').selectedOptions[0].dataset.doble,
         interiorPaperCost:       flyerPapel.costo_paquete,
         interiorUnitsPerPackage: flyerPapel.unidades_por_paquete,
         interiorSupplyId:        flyerPapel.id || null,

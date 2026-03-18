@@ -32,6 +32,7 @@ export function generateQuotation(allData, params) {
     coverPaperCost = 0,
     coverUnitsPerPackage = 100,
     numColors = 4,
+    doubleSided = false,
     hasLamination = false,
     hasBinding = false,
     bindingType = 'Anillado',
@@ -306,7 +307,7 @@ export function generateQuotation(allData, params) {
       interiorUnitsPerPackage,
       mermaPercent
     );
-    const plates  = calculatePlateCost(allData, numColors, quantity);
+    const plates  = calculatePlateCost(allData, numColors * (doubleSided ? 2 : 1), quantity);
     const cutting = calculateProcessCost(allData, 'Corte', quantity);
 
     breakdown.interior = {
@@ -348,7 +349,7 @@ export function generateQuotation(allData, params) {
           quantity, bestCover.imposition.piecesPerSheet,
           coverPaperCost || 55000, coverUnitsPerPackage, mermaPercent
         );
-        const coverPlates = calculatePlateCost(allData, numColors, quantity);
+        const coverPlates = calculatePlateCost(allData, numColors * (doubleSided ? 2 : 1), quantity);
         const laminationCost = hasLamination
           ? calculateProcessCost(allData, 'Laminado', quantity)
           : { totalCost: 0 };
