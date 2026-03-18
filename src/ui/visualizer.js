@@ -52,19 +52,49 @@ export function renderImpositionPreview(container, render, machineName) {
   // Waste + margin zones
   const usedW = cols * pieceW;
   const usedH = rows * pieceH;
+  const wR = printAreaW - usedW;   // right waste inside print area (cm)
+  const wB = printAreaH - usedH;   // bottom waste inside print area (cm)
+
+  // Total sobrante incluyendo márgenes de máquina
+  const sobranteAncho = (wR + marginL).toFixed(1);
+  const sobranteLargo = (wB + marginT).toFixed(1);
+
+  const labelFs = Math.max(1.2, Math.min(pieceW * 0.18, 3.5));
+
   let extras = '';
+  // Machine margins (dark)
   if (marginL > 0.5) {
-    extras += `<rect x="0" y="0" width="${marginL.toFixed(2)}" height="${paperH}" fill="#0d0d0d" opacity="0.6"/>
-               <rect x="${(paperW - marginL).toFixed(2)}" y="0" width="${marginL.toFixed(2)}" height="${paperH}" fill="#0d0d0d" opacity="0.6"/>`;
+    extras += `<rect x="0" y="0" width="${marginL.toFixed(2)}" height="${paperH}" fill="#0d0d0d" opacity="0.7"/>
+               <rect x="${(paperW - marginL).toFixed(2)}" y="0" width="${marginL.toFixed(2)}" height="${paperH}" fill="#0d0d0d" opacity="0.7"/>`;
   }
   if (marginT > 0.5) {
-    extras += `<rect x="0" y="0" width="${paperW}" height="${marginT.toFixed(2)}" fill="#0d0d0d" opacity="0.6"/>
-               <rect x="0" y="${(paperH - marginT).toFixed(2)}" width="${paperW}" height="${marginT.toFixed(2)}" fill="#0d0d0d" opacity="0.6"/>`;
+    extras += `<rect x="0" y="0" width="${paperW}" height="${marginT.toFixed(2)}" fill="#0d0d0d" opacity="0.7"/>
+               <rect x="0" y="${(paperH - marginT).toFixed(2)}" width="${paperW}" height="${marginT.toFixed(2)}" fill="#0d0d0d" opacity="0.7"/>`;
   }
-  const wR = printAreaW - usedW;
-  const wB = printAreaH - usedH;
-  if (wR > 0.3) extras += `<rect x="${(marginL + usedW).toFixed(2)}" y="${marginT.toFixed(2)}" width="${wR.toFixed(2)}" height="${usedH.toFixed(2)}" fill="#111" opacity="0.7"/>`;
-  if (wB > 0.3) extras += `<rect x="${marginL.toFixed(2)}" y="${(marginT + usedH).toFixed(2)}" width="${usedW.toFixed(2)}" height="${wB.toFixed(2)}" fill="#111" opacity="0.7"/>`;
+
+  // Right waste zone — amber with label
+  if (wR > 0.5) {
+    const rx = marginL + usedW;
+    const ry = marginT;
+    const rcx = rx + wR / 2;
+    const rcy = ry + usedH / 2;
+    extras += `
+      <rect x="${rx.toFixed(2)}" y="${ry.toFixed(2)}" width="${wR.toFixed(2)}" height="${usedH.toFixed(2)}" fill="#b45309" opacity="0.5"/>
+      <text x="${rcx.toFixed(2)}" y="${rcy.toFixed(2)}" dominant-baseline="middle" text-anchor="middle"
+        font-size="${labelFs.toFixed(2)}" font-family="monospace" font-weight="bold" fill="#fcd34d">${wR.toFixed(1)}cm</text>`;
+  }
+
+  // Bottom waste zone — amber with label
+  if (wB > 0.5) {
+    const bx = marginL;
+    const by = marginT + usedH;
+    const bcx = bx + usedW / 2;
+    const bcy = by + wB / 2;
+    extras += `
+      <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${usedW.toFixed(2)}" height="${wB.toFixed(2)}" fill="#b45309" opacity="0.5"/>
+      <text x="${bcx.toFixed(2)}" y="${bcy.toFixed(2)}" dominant-baseline="middle" text-anchor="middle"
+        font-size="${labelFs.toFixed(2)}" font-family="monospace" font-weight="bold" fill="#fcd34d">${wB.toFixed(1)}cm</text>`;
+  }
 
   container.innerHTML = `
     <div class="viz-container">
@@ -88,7 +118,7 @@ export function renderImpositionPreview(container, render, machineName) {
       </div>
       <div class="viz-legend">
         <span class="legend-piece">■ Pieza (${originalPieceW}×${originalPieceH} cm)</span>
-        <span class="legend-waste">■ Desperdicio / Margen</span>
+        <span class="legend-waste">■ Berma: ${sobranteAncho}cm × ${sobranteLargo}cm</span>
         ${rotated ? '<span class="viz-tag viz-tag-rotated" style="font-size:.75rem">↻ Rotada 90°</span>' : ''}
       </div>
     </div>`;

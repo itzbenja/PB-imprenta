@@ -634,6 +634,15 @@ body::before {
 .animate-in > *:nth-child(7) { animation-delay: 0.3s; }
 
 /* ── Range Slider ────────────────────────────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 input[type="range"] {
   width: 100%;
   height: 6px;
@@ -1604,6 +1613,83 @@ tr.editing td {
   margin-bottom: 1.5rem;
 }
 
+/* ── Product toggle (Agenda / Talonario) ─────────────────────── */
+.product-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.prod-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.prod-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+.prod-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* ── Form row (two columns) ──────────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Terminaciones checkboxes ────────────────────────────────── */
+.section-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.checkbox-item:has(input:checked) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-glow);
+}
+.checkbox-item input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Muted value ─────────────────────────────────────────────── */
+.muted { opacity: 0.4; }
+
 /* ── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 8px;
@@ -1620,4 +1706,136 @@ tr.editing td {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ── Opciones compartidas del form (merma + margen) ─────────── */
+.shared-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 520px) {
+  .shared-options { grid-template-columns: 1fr; }
+}
+
+/* ── Botón imprimir ──────────────────────────────────────────── */
+.btn-print {
+  padding: 0.35rem 0.9rem;
+  background: rgba(76, 175, 80, 0.12);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+  border-radius: var(--radius-sm);
+  color: var(--accent-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-print:hover {
+  background: rgba(76, 175, 80, 0.22);
+}
+
+/* ── Validación de formulario ────────────────────────────────── */
+.input-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+.field-error {
+  display: block;
+  color: var(--danger);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+
+/* ── Badges tipo cotización ──────────────────────────────────── */
+.badge-tipo {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-agenda    { background: rgba(76,175,80,0.15);  color: #4CAF50; }
+.badge-talonario { background: rgba(245,124,0,0.15);  color: #FF9800; }
+.badge-libro     { background: rgba(99,102,241,0.15); color: #818cf8; }
+.badge-flyer     { background: rgba(236,72,153,0.15); color: #f472b6; }
+
+/* ── Tabla cotizaciones (más compacta) ───────────────────────── */
+.cotizaciones-table td,
+.cotizaciones-table th {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+/* ── @media print ────────────────────────────────────────────── */
+@media print {
+  body::before { display: none; }
+
+  .navbar,
+  .form-container,
+  .no-print,
+  .machine-comparison,
+  #vizInterior,
+  .viz-card {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  .main-grid {
+    display: block;
+  }
+
+  #resultsContainer {
+    width: 100%;
+  }
+
+  .results-panel {
+    background: #fff;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+
+  .result-card,
+  .total-card,
+  .cost-summary-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    break-inside: avoid;
+    color: #111;
+  }
+
+  .results-header h2,
+  .cost-row span,
+  .stat-label,
+  .stat-value,
+  h3, h4 {
+    color: #111 !important;
+  }
+
+  .total-amount {
+    color: #1a5c1a !important;
+  }
+
+  .badge {
+    border: 1px solid #ccc;
+    color: #333;
+    background: #f5f5f5;
+  }
+
+  .cost-row.subtotal span,
+  .cost-row.margin-row span,
+  .cost-row.iva-row span {
+    color: #333 !important;
+  }
 }

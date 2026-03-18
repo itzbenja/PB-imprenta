@@ -8,14 +8,16 @@ import {
   getSupplies, createSupply, updateSupply, deleteSupply,
   getProcesses, createProcess, updateProcess, deleteProcess,
   getPricing, createPricing, updatePricing, deletePricing,
+  getCotizaciones, deleteCotizacion,
 } from '../db/firestore-api.js';
 
 export async function renderAdmin(container, onDataChanged) {
   const tabs = [
-    { id: 'pricing',   label: '💲 Precios',          render: async () => await renderPricing() },
-    { id: 'machines',  label: '🖨️ Máquinas',        render: async () => await renderMachines() },
-    { id: 'supplies',  label: '📦 Insumos',          render: async () => await renderSupplies() },
-    { id: 'processes', label: '⚙️ Procesos',         render: async () => await renderProcesses() },
+    { id: 'pricing',      label: '💲 Precios',       render: async () => await renderPricing() },
+    { id: 'machines',     label: '🖨️ Máquinas',     render: async () => await renderMachines() },
+    { id: 'supplies',     label: '📦 Insumos',       render: async () => await renderSupplies() },
+    { id: 'processes',    label: '⚙️ Procesos',      render: async () => await renderProcesses() },
+    { id: 'cotizaciones', label: '📋 Cotizaciones',  render: async () => await renderCotizaciones() },
   ];
 
   let activeTab = 'pricing';
@@ -26,9 +28,32 @@ export async function renderAdmin(container, onDataChanged) {
       <div class="admin-header">
         <h2><span class="icon">⚙️</span> Panel de Administración</h2>
         <p class="admin-subtitle">Administra precios, máquinas e insumos en tiempo real</p>
-        <button id="btnReseed" style="margin-top:0.5rem;padding:0.4rem 0.9rem;background:rgba(245,124,0,0.15);border:1px solid rgba(245,124,0,0.4);border-radius:8px;color:var(--orange-light);font-size:0.82rem;cursor:pointer;">
-          🔄 Re-poblar datos desde Excel
-        </button>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem;">
+          <button id="btnReseed" style="padding:0.4rem 0.9rem;background:rgba(245,124,0,0.15);border:1px solid rgba(245,124,0,0.4);border-radius:8px;color:var(--orange-light);font-size:0.82rem;cursor:pointer;">
+            🔄 Re-poblar datos
+          </button>
+          <button id="btnShowClean" style="padding:0.4rem 0.9rem;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:8px;color:#f87171;font-size:0.82rem;cursor:pointer;">
+            🗑️ Limpiar colecciones
+          </button>
+        </div>
+        <div id="cleanPanel" style="display:none;margin-top:0.75rem;padding:0.75rem 1rem;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;">
+          <p style="margin:0 0 0.5rem;font-size:0.82rem;color:#f87171;font-weight:600;">Seleccioná qué eliminar:</p>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1.2rem;margin-bottom:0.6rem;">
+            ${[
+              ['col-maquinas',   'Máquinas'],
+              ['col-insumos',    'Insumos'],
+              ['col-procesos',   'Procesos'],
+              ['col-precios',    'Matriz de Precios'],
+              ['col-cotizaciones','Cotizaciones'],
+            ].map(([id, label]) => `
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;cursor:pointer;">
+                <input type="checkbox" id="${id}" style="accent-color:#f87171;"> ${label}
+              </label>`).join('')}
+          </div>
+          <button id="btnDeleteSelected" style="padding:0.35rem 0.9rem;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:8px;color:#f87171;font-size:0.82rem;cursor:pointer;font-weight:600;">
+            🗑️ Eliminar seleccionados
+          </button>
+        </div>
       </div>
       <div class="admin-tabs" id="adminTabsMenu"></div>
       <div class="admin-content" id="adminContentArea">
@@ -70,14 +95,115 @@ export async function renderAdmin(container, onDataChanged) {
 
   // Re-seed button
   container.querySelector('#btnReseed')?.addEventListener('click', async () => {
-    if (!confirm('¿Re-poblar con los datos del Excel? Esto AGREGA datos (no borra los existentes). Usa esto solo si la base está vacía o incorrecta.')) return;
     const btn = container.querySelector('#btnReseed');
     btn.disabled = true; btn.textContent = '⏳ Poblando...';
-    const { default: seedData } = await import('../db/seed-firestore.js');
-    await seedData();
-    btn.textContent = '✅ Listo';
+    try {
+      const { default: seedData } = await import('../db/seed-firestore.js?v=' + Date.now());
+      await seedData();
+      btn.textContent = '✅ Listo';
+      setTimeout(() => refresh(), 800);
+    } catch(e) {
+      btn.textContent = '❌ Error — ver consola';
+      btn.disabled = false;
+      console.error('Seed error:', e);
+    }
+  });
+
+  // Toggle clean panel
+  container.querySelector('#btnShowClean')?.addEventListener('click', () => {
+    const panel = container.querySelector('#cleanPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Delete selected collections
+  container.querySelector('#btnDeleteSelected')?.addEventListener('click', async () => {
+    const selected = [];
+    if (container.querySelector('#col-maquinas')?.checked)    selected.push({ label: 'Máquinas',          get: getMachines,     del: deleteMachine });
+    if (container.querySelector('#col-insumos')?.checked)     selected.push({ label: 'Insumos',            get: getSupplies,     del: deleteSupply });
+    if (container.querySelector('#col-procesos')?.checked)    selected.push({ label: 'Procesos',           get: getProcesses,    del: deleteProcess });
+    if (container.querySelector('#col-precios')?.checked)     selected.push({ label: 'Matriz de Precios',  get: getPricing,      del: deletePricing });
+    if (container.querySelector('#col-cotizaciones')?.checked) selected.push({ label: 'Cotizaciones',     get: getCotizaciones, del: deleteCotizacion });
+
+    if (selected.length === 0) { alert('Seleccioná al menos una colección.'); return; }
+    const names = selected.map(s => s.label).join(', ');
+    if (!confirm(`¿Eliminar TODOS los documentos de: ${names}?`)) return;
+
+    const btn = container.querySelector('#btnDeleteSelected');
+    btn.disabled = true; btn.textContent = '⏳ Eliminando...';
+    for (const col of selected) {
+      const items = await col.get();
+      await Promise.all(items.map(item => col.del(item.id)));
+    }
+    btn.disabled = false; btn.textContent = '✅ Eliminado';
     setTimeout(() => refresh(), 500);
   });
+}
+
+// ── COTIZACIONES ───────────────────────────────────────────────
+
+async function renderCotizaciones() {
+  const rows = await getCotizaciones();
+
+  // Sort newest first (serverTimestamp may be null briefly right after create)
+  rows.sort((a, b) => {
+    const ta = a.fecha?.toDate?.() ?? new Date(0);
+    const tb = b.fecha?.toDate?.() ?? new Date(0);
+    return tb - ta;
+  });
+
+  if (rows.length === 0) {
+    return `
+      <div class="admin-section">
+        <h3>Cotizaciones Guardadas</h3>
+        <p class="admin-subtitle" style="margin-top:1rem;">No hay cotizaciones registradas todavía.</p>
+      </div>`;
+  }
+
+  const fmtMoney = (n) => n != null ? `$${Number(n).toLocaleString('es-CL')}` : '—';
+  const fmtDate  = (ts) => {
+    const d = ts?.toDate?.();
+    if (!d) return '—';
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return `
+    <div class="admin-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+        <h3>Cotizaciones Guardadas <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">(${rows.length} registros)</span></h3>
+      </div>
+      <table class="admin-table cotizaciones-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Dimensiones</th>
+            <th>Máquina</th>
+            <th>Costo Prod.</th>
+            <th>Total</th>
+            <th>Unitario</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+          <tr data-cot-id="${r.id}">
+            <td style="white-space:nowrap;font-size:0.8rem;color:var(--text-secondary);">${fmtDate(r.fecha)}</td>
+            <td><span class="badge-tipo badge-${(r.tipo_producto || '').toLowerCase()}">${r.tipo_producto || '—'}</span></td>
+            <td>${r.cantidad ?? '—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-secondary);">${r.dimensiones || '—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-secondary);">${r.maquina_interior || '—'}</td>
+            <td>${fmtMoney(r.costo_produccion)}</td>
+            <td style="font-weight:600;color:var(--accent-primary);">${fmtMoney(r.total)}</td>
+            <td>${fmtMoney(r.costo_unitario)}</td>
+            <td class="action-cell">
+              <button class="btn-icon-action btn-delete btn-del-cot" data-cot-id="${r.id}" title="Eliminar">🗑️</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -158,22 +284,36 @@ async function renderSupplies() {
   rows.sort((a, b) => a.tipo_insumo.localeCompare(b.tipo_insumo) || a.nombre_insumo.localeCompare(b.nombre_insumo));
   
   const tipoOpts = [
-    {value: 'Papel Interior', label: 'Papel Interior'},
-    {value: 'Papel Tapa', label: 'Papel Tapa'},
-    {value: 'Cartón Dúplex', label: 'Cartón Dúplex'},
+    {value: 'Papel Interior',   label: 'Papel Interior'},
+    {value: 'Papel Tapa',       label: 'Papel Tapa'},
+    {value: 'Papel Talonario',  label: 'Papel Talonario'},
+    {value: 'Cartón Dúplex',    label: 'Cartón Dúplex'},
+    {value: 'Papel Couché',     label: 'Papel Couché'},
+    {value: 'Papel Kraft',      label: 'Papel Kraft'},
+    {value: 'Cartón Piedra',    label: 'Cartón Piedra'},
+    {value: 'Papel Especial',   label: 'Papel Especial'},
+    {value: 'Material Especial',label: 'Material Especial'},
+  ];
+  const tipoPapelOpts = [
+    {value: '',    label: '—'},
+    {value: 'CB',  label: 'CB (Carbon Back)'},
+    {value: 'CFB', label: 'CFB (Carbon Front & Back)'},
+    {value: 'CF',  label: 'CF (Carbon Front)'},
   ];
   return `
     <div class="admin-section">
       <h3>Insumos (Papeles y Materiales)</h3>
       <table class="admin-table">
         <thead>
-          <tr><th>Tipo</th><th>Nombre</th><th>Gramaje</th><th>Unid/Paq</th><th>Costo/Paq</th><th></th></tr>
+          <tr><th>Tipo</th><th>Nombre</th><th>Formato</th><th>Tipo Papel</th><th>Gramaje</th><th>Unid/Paq</th><th>Costo/Paq</th><th></th></tr>
         </thead>
         <tbody>
           ${rows.map(r => `
           <tr data-row-id="${r.id}" data-table="supplies">
             ${editSelect(r.tipo_insumo, 'tipo_insumo', tipoOpts)}
             ${editCell(r.nombre_insumo, 'nombre_insumo', 'text', {required: true})}
+            ${editCell(r.formato || '', 'formato', 'text', {displayValue: r.formato || '—', placeholder: 'ej: 77x110'})}
+            ${editSelect(r.tipo_papel || '', 'tipo_papel', tipoPapelOpts)}
             ${editCell(r.gramaje, 'gramaje', 'number', {displayValue: (r.gramaje || '-') + 'g', step: '1'})}
             ${editCell(r.unidades_por_paquete, 'unidades_por_paquete', 'number', {step: '1'})}
             ${editCell(r.costo_paquete, 'costo_paquete', 'number', {displayValue: '$' + fmt(r.costo_paquete), step: '1'})}
@@ -190,7 +330,9 @@ async function renderSupplies() {
         <summary class="btn-add">＋ Agregar Insumo</summary>
         <form data-form="add-supply" class="admin-form-grid">
           <div class="form-group"><label>Tipo</label><select name="tipo_insumo" required>${tipoOpts.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
-          <div class="form-group"><label>Nombre</label><input name="nombre_insumo" required placeholder="Ej: Bond Blanco" /></div>
+          <div class="form-group"><label>Nombre</label><input name="nombre_insumo" required placeholder="Ej: Bond Blanco 75g" /></div>
+          <div class="form-group"><label>Formato</label><input name="formato" placeholder="Ej: 77x110, Carta, Oficio" /></div>
+          <div class="form-group"><label>Tipo Papel</label><select name="tipo_papel">${tipoPapelOpts.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="form-group"><label>Gramaje</label><input name="gramaje" type="number" placeholder="75" /></div>
           <div class="form-group"><label>Unid/Paquete</label><input name="unidades_por_paquete" type="number" value="500" required /></div>
           <div class="form-group"><label>Costo/Paquete ($)</label><input name="costo_paquete" type="number" required placeholder="25000" /></div>
@@ -392,6 +534,16 @@ function bindAllActions(container, refresh) {
         }
       });
     }
+  });
+
+  // ── Borrar cotización individual ─────────────────────────────
+  container.querySelectorAll('.btn-del-cot').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta cotización?')) return;
+      btn.disabled = true; btn.textContent = '⏳';
+      await deleteCotizacion(btn.dataset.cotId);
+      btn.closest('tr').remove();
+    });
   });
 
   // ── Add forms ───────────────────────────────────────────────

@@ -19,7 +19,7 @@ export function renderResults(container, quote) {
     return;
   }
 
-  const fmt = (n) => `$${Math.round(n).toLocaleString('es-CL')}`;
+  const fmt = (n) => (n == null || isNaN(n)) ? '—' : `$${Math.round(n).toLocaleString('es-CL')}`;
 
   let html = `<div class="results-panel animate-in">`;
 
@@ -30,8 +30,123 @@ export function renderResults(container, quote) {
       <div class="results-meta">
         <span class="badge">${quote.quantity} unidades</span>
         <span class="badge">${quote.dimensions}</span>
+        <button class="btn-print no-print" onclick="window.print()" title="Imprimir / Exportar PDF">
+          🖨️ Imprimir
+        </button>
       </div>
     </div>`;
+
+  // ══════════════════════════════════════════════════════════════
+  // TALONARIO — layout específico
+  // ══════════════════════════════════════════════════════════════
+  if (quote.productType === 'Talonario' && quote.talonario) {
+    const t = quote.talonario;
+    const fmtCost = (n) => n > 0 ? fmt(n) : '<span class="muted">$0</span>';
+
+    // Visualizador imposición
+    if (t.render) html += `<div id="vizInterior" class="result-card viz-card"></div>`;
+
+    // Encabezado imposición
+    html += `
+      <div class="result-card">
+        <h3>✂️ Imposición — ${t.machine}</h3>
+        <div class="card-grid">
+          <div class="stat"><span class="stat-label">Piezas/Pliego</span><span class="stat-value highlight">${t.piecesPerSheet}</span></div>
+          <div class="stat"><span class="stat-label">Distribución</span><span class="stat-value">${t.layout} (${t.orientation})</span></div>
+          <div class="stat"><span class="stat-label">Desperdicio</span><span class="stat-value ${parseFloat(t.wastePercent) > 30 ? 'warn' : ''}">${t.wastePercent}%</span></div>
+          <div class="stat"><span class="stat-label">Hojas/Vía</span><span class="stat-value">${t.vias[0]?.hojasPorVia ?? '—'}</span></div>
+        </div>
+      </div>`;
+
+    // Vías de papel
+    t.vias.forEach(v => {
+      html += `
+        <div class="result-card">
+          <h3>📄 ${v.nombre}</h3>
+          <div class="cost-breakdown">
+            <div class="cost-row"><span>${v.papelNombre}: ${v.sheetsNeeded} hojas + merma = ${v.sheetsWithMerma} (${v.packages} paq. × ${v.unitsPerPackage})</span><span>${fmt(v.paperCost)}</span></div>
+            <div class="cost-row subtotal"><span>Subtotal papel ${v.nombre}</span><span>${fmt(v.paperCost)}</span></div>
+          </div>
+        </div>`;
+    });
+
+    // Impresión + alzado
+    html += `
+      <div class="result-card">
+        <h3>🖨️ Impresión y Alzado</h3>
+        <div class="cost-breakdown">
+          <div class="cost-row"><span>Impresión (${t.numColors === 4 ? 'Full Color' : t.numColors + ' Color'})</span><span>${fmtCost(t.impresionCost)}</span></div>
+          <div class="cost-row"><span>Planchas</span><span>${fmtCost(t.planchasCost)}</span></div>
+          <div class="cost-row"><span>Corte</span><span>${fmtCost(t.corteCost)}</span></div>
+          <div class="cost-row"><span>Alzado</span><span>${fmtCost(t.alzadoCost)}</span></div>
+        </div>
+      </div>`;
+
+    // Terminaciones
+    const termActivas = Object.values(t.terminaciones).filter(x => x.active);
+    if (termActivas.length > 0) {
+      html += `
+        <div class="result-card">
+          <h3>🔧 Terminaciones</h3>
+          <div class="cost-breakdown">
+            ${Object.values(t.terminaciones).filter(x => x.active).map(x =>
+              `<div class="cost-row"><span>${x.label}</span><span>${fmtCost(x.cost)}</span></div>`
+            ).join('')}
+          </div>
+        </div>`;
+    }
+
+    // Tabla comparación máquinas para Talonario
+    if (quote.interior?.allMachineOptions && quote.interior.allMachineOptions.length > 1) {
+      html += `
+        <div class="result-card machine-comparison">
+          <h4><span class="icon">🏭</span> Comparación de Máquinas</h4>
+          <table>
+            <thead>
+              <tr><th>Máquina</th><th>Piezas/Pliego</th><th>Desperdicio</th><th>Orientación</th></tr>
+            </thead>
+            <tbody>
+              ${quote.interior.allMachineOptions.map((m, idx) => `
+                <tr class="${idx === 0 ? 'best' : ''}">
+                  <td>${m.machine} ${idx === 0 ? '⭐' : ''}</td>
+                  <td>${m.piecesPerSheet}</td>
+                  <td>${m.waste}%</td>
+                  <td>${m.orientation}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    // Saltar al cost summary
+    html += `
+      <div class="result-card cost-summary-card">
+        <h3>💰 Resumen de Costos</h3>
+        <div class="cost-breakdown">
+          <div class="cost-row"><span>Costo Papel (${t.vias.length} vías)</span><span>${fmt(quote.costoPapel)}</span></div>
+          <div class="cost-row"><span>Costo Procesos (impresión, alzado, terminaciones)</span><span>${fmt(quote.costoProcesos)}</span></div>
+          <div class="cost-row subtotal"><span>Costo de Producción</span><span>${fmt(quote.costoProduccion)}</span></div>
+          <div class="cost-row margin-row"><span>Margen de Ganancia (${quote.marginPercent}%)</span><span>+ ${fmt(quote.margenGanancia)}</span></div>
+          <div class="cost-row"><span>Subtotal con Margen</span><span>${fmt(quote.subtotalConMargen)}</span></div>
+          <div class="cost-row iva-row"><span>IVA (${quote.ivaPercent}%)</span><span>+ ${fmt(quote.iva)}</span></div>
+        </div>
+      </div>
+      <div class="total-card">
+        <div class="total-row"><span>TOTAL</span><span class="total-amount">${fmt(quote.totalCost)}</span></div>
+        <div class="per-unit">Costo por talonario: ${fmt(quote.costPerUnit)}</div>
+      </div>
+    </div>`;
+
+    container.innerHTML = html;
+    requestAnimationFrame(() => {
+      container.querySelector('.results-panel')?.classList.add('visible');
+      if (t.render) {
+        const viz = container.querySelector('#vizInterior');
+        if (viz) renderImpositionPreview(viz, t.render, t.machine);
+      }
+    });
+    return;
+  }
 
   // ── IMPOSITION VISUALIZER (for best machine) ──────────────────
   if (quote.interior?.render) {
@@ -60,7 +175,7 @@ export function renderResults(container, quote) {
           </div>
           <div class="stat">
             <span class="stat-label">Desperdicio</span>
-            <span class="stat-value ${i.wastePercent > 30 ? 'warn' : ''}">${i.wastePercent}%</span>
+            <span class="stat-value ${parseFloat(i.wastePercent) > 30 ? 'warn' : ''}">${i.wastePercent}%</span>
           </div>
         </div>
         ${i.interiorPages ? `
@@ -124,7 +239,7 @@ export function renderResults(container, quote) {
           ${isAgendaCover ? `
           <div class="cost-row"><span>Impresión Tapa</span><span>${fmt(c.impresionCost)}</span></div>
           <div class="cost-row"><span>Polilaminado Tapa</span><span>${fmt(c.polilaminadoCost)}</span></div>
-          <div class="cost-row"><span>Cartón Piedra</span><span>${fmt(c.paperCost)}</span></div>
+          <div class="cost-row"><span>Cartón Piedra ${c.paperDetail ? `<small class="muted">(${c.paperDetail})</small>` : ''}</span><span>${fmt(c.paperCost)}</span></div>
           <div class="cost-row"><span>Corte Tapa</span><span>${fmt(c.cuttingCost)}</span></div>
           <div class="cost-row"><span>Mano de Obra</span><span>${fmt(c.manoObraCost)}</span></div>
           ` : `
@@ -162,16 +277,21 @@ export function renderResults(container, quote) {
   }
 
   // ── Finishing ─────────────────────────────────────────────────
-  if (quote.finishing.binding) {
-    const b = quote.finishing.binding;
+  if (quote.finishing.binding || quote.finishing.lamination) {
     html += `
       <div class="result-card">
         <h3><span class="icon">🔧</span> Terminaciones</h3>
         <div class="cost-breakdown">
+          ${quote.finishing.binding ? `
           <div class="cost-row">
-            <span>${b.type}: ${quote.quantity} × ${fmt(b.unitCost)}</span>
-            <span>${fmt(b.totalCost)}</span>
-          </div>
+            <span>${quote.finishing.binding.type}: ${quote.quantity} × ${fmt(quote.finishing.binding.unitCost)}</span>
+            <span>${fmt(quote.finishing.binding.totalCost)}</span>
+          </div>` : ''}
+          ${quote.finishing.lamination ? `
+          <div class="cost-row">
+            <span>Laminado</span>
+            <span>${fmt(quote.finishing.lamination.totalCost)}</span>
+          </div>` : ''}
         </div>
       </div>`;
   }

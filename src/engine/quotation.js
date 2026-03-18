@@ -10,6 +10,7 @@ import {
   calculatePlateCost,
   calculateProcessCost,
   getMachines,
+  getSupplies,
 } from './pricing.js';
 
 /** Default profit margin and tax */
@@ -41,7 +42,8 @@ export function generateQuotation(allData, params) {
 
   const machines = getMachines(allData);
   const isEditorial = productType === 'Libro' || productType === 'Agenda';
-  const isAgenda = productType === 'Agenda';
+  const isAgenda    = productType === 'Agenda';
+  const isTalonario = productType === 'Talonario';
 
   const breakdown = {
     productType,
@@ -88,8 +90,8 @@ export function generateQuotation(allData, params) {
     const pageSidesPerSheet  = effectivePieces * 2;
     const totalPressSheets   = Math.ceil(totalPageSides / pageSidesPerSheet);
     const paperResult = calculatePaperCost(
-      totalPressSheets * effectivePieces,
-      effectivePieces,
+      totalPressSheets,
+      1,
       interiorPaperCost || 25000,
       interiorUnitsPerPackage,
       mermaPercent
@@ -127,12 +129,26 @@ export function generateQuotation(allData, params) {
     breakdown.costoPapel    += paperResult.cost;
     breakdown.costoProcesos += impresionInterior + planchasInterior + corteInterior + anillo + anillado;
 
-    // Tapa
-    const impresionTapa     = pc('Impresión Tapa');
-    const polilaminadoTapa  = pc('Polilaminado Tapa');
-    const cartonPiedra      = pc('Cartón Piedra');
-    const corteTapa         = pc('Corte Tapa');
-    const manoObra          = pc('Mano de Obra');
+    // Tapa — Cartón Piedra con precio real por pliego
+    const impresionTapa    = pc('Impresión Tapa');
+    const polilaminadoTapa = pc('Polilaminado Tapa');
+    const corteTapa        = pc('Corte Tapa');
+    const manoObra         = pc('Mano de Obra');
+
+    const cpSupply = getSupplies(allData, 'Cartón Piedra').find(s => s.unidades_por_paquete === 1);
+    let cartonPiedra;
+    let cpDetail;
+    if (cpSupply && cpSupply.formato) {
+      const [fw, fh] = cpSupply.formato.split('x').map(Number);
+      const piezasPorPliego = Math.floor(fw / pieceWidth) * Math.floor(fh / pieceHeight);
+      const pliegosBase     = Math.ceil(quantity / Math.max(piezasPorPliego, 1));
+      const pliegosConMerma = Math.ceil(pliegosBase * (1 + mermaPercent / 100));
+      cartonPiedra = pliegosConMerma * cpSupply.costo_paquete;
+      cpDetail     = `${pliegosConMerma} pliegos × $${cpSupply.costo_paquete.toLocaleString()} (${cpSupply.formato})`;
+    } else {
+      cartonPiedra = pc('Cartón Piedra');
+      cpDetail     = 'Precio desde matriz';
+    }
 
     breakdown.cover = {
       machine: best.machine.nombre,
@@ -141,6 +157,7 @@ export function generateQuotation(allData, params) {
       layout: `${best.imposition.cols} × ${best.imposition.rows}`,
       wastePercent: best.imposition.wastePercent,
       paperCost: cartonPiedra,
+      paperDetail: cpDetail,
       impresionCost: impresionTapa,
       polilaminadoCost: polilaminadoTapa,
       cuttingCost: corteTapa,
@@ -170,6 +187,104 @@ export function generateQuotation(allData, params) {
     };
     breakdown.costoPapel    += papEspejo;
     breakdown.costoProcesos += impEspejo + poliEspejo + corEspejo + impInter + corInter;
+
+  // ══════════════════════════════════════════════════════════════
+  // RUTA C: TALONARIO
+  // ══════════════════════════════════════════════════════════════
+  } else if (isTalonario) {
+    const {
+      juegosPerTalonario = 50,
+      vias = [],
+      terminaciones = {},
+      mermaPercent: mp = 10,
+    } = params;
+
+    const hojasPerVia = quantity * juegosPerTalonario;
+
+    // Imposition uses piece dimensions
+    const coloresNombre =
+      numColors === 1 ? 'Impresión Talonario 1 Color' :
+      numColors === 2 ? 'Impresión Talonario 2 Colores' :
+                        'Impresión Talonario Full Color';
+
+    const impresionCost = calculateProcessCost(allData, coloresNombre,        quantity).totalCost;
+    const alzadoCost    = calculateProcessCost(allData, 'Alzado Talonario',   quantity).totalCost;
+    const planchasCost  = calculateProcessCost(allData, 'Planchas Talonario', quantity).totalCost;
+    const corteCost     = calculateProcessCost(allData, 'Corte Talonario',    quantity).totalCost;
+
+    // Per-vía breakdown
+    const viasResult = vias.map((via, idx) => {
+      const paperResult = calculatePaperCost(
+        hojasPerVia,
+        effectivePieces,
+        via.papel?.costo_paquete    || 22000,
+        via.papel?.unidades_por_paquete || 500,
+        mp
+      );
+      breakdown.costoPapel += paperResult.cost;
+      return {
+        nombre:          via.nombre,
+        papelNombre:     via.papel?.nombre_insumo || `Vía ${idx + 1}`,
+        hojasPorVia:     hojasPerVia,
+        pressSheets:     Math.ceil(hojasPerVia / effectivePieces),
+        sheetsNeeded:    paperResult.sheetsNeeded,
+        sheetsWithMerma: paperResult.sheetsWithMerma,
+        packages:        paperResult.packages,
+        unitsPerPackage: paperResult.unitsPerPackage,
+        paperCost:       paperResult.cost,
+      };
+    });
+
+    // Terminaciones
+    const termKeys = {
+      folio:          'Folio',
+      prepicado:      'Prepicado',
+      corcheteYCinta: 'Corchete y Cinta',
+      engomado:       'Engomado',
+      cartonBase:     'Cartón Base Talonario',
+    };
+    const termResult = {};
+    for (const [key, procName] of Object.entries(termKeys)) {
+      const active = terminaciones[key] || false;
+      const cost   = active ? calculateProcessCost(allData, procName, quantity).totalCost : 0;
+      termResult[key] = { active, cost, label: procName };
+      if (active) breakdown.costoProcesos += cost;
+    }
+
+    breakdown.costoProcesos += impresionCost + alzadoCost + planchasCost + corteCost;
+
+    breakdown.talonario = {
+      juegosPerTalonario,
+      numColors,
+      machine:        best.machine.nombre,
+      piecesPerSheet: effectivePieces,
+      layout:         `${best.imposition.cols} × ${best.imposition.rows}`,
+      wastePercent:   best.imposition.wastePercent,
+      orientation:    best.imposition.orientation,
+      render:         best.imposition.render,
+      vias:           viasResult,
+      impresionCost,
+      planchasCost,
+      corteCost,
+      alzadoCost,
+      terminaciones:  termResult,
+    };
+
+    breakdown.interior = {
+      machine:        best.machine.nombre,
+      piecesPerSheet: effectivePieces,
+      layout:         manualPiecesPerSheet ? `Manual: ${manualPiecesPerSheet}` : `${best.imposition.cols} × ${best.imposition.rows}`,
+      wastePercent:   manualPiecesPerSheet ? '—' : best.imposition.wastePercent,
+      orientation:    best.imposition.orientation,
+      render:         manualPiecesPerSheet ? null : best.imposition.render,
+      allMachineOptions: rankings.map(r => ({
+        machine:       r.machine.nombre,
+        piecesPerSheet:r.imposition.piecesPerSheet,
+        waste:         r.imposition.wastePercent,
+        orientation:   r.imposition.orientation,
+        render:        r.imposition.render,
+      })),
+    };
 
   // ══════════════════════════════════════════════════════════════
   // RUTA B: LIBRO / FLYER — lógica original
@@ -268,6 +383,13 @@ export function generateQuotation(allData, params) {
       };
       breakdown.costoProcesos += binding.totalCost;
     }
+
+    // Laminado para Flyer (sin tapa separada)
+    if (hasLamination && !isEditorial) {
+      const lam = calculateProcessCost(allData, 'Laminado', quantity);
+      breakdown.finishing.lamination = { totalCost: lam.totalCost };
+      breakdown.costoProcesos += lam.totalCost;
+    }
   }
 
   // ── COST SUMMARY (Producción + Margen + IVA) ─────────────────
@@ -276,7 +398,7 @@ export function generateQuotation(allData, params) {
   breakdown.subtotalConMargen = breakdown.costoProduccion + breakdown.margenGanancia;
   breakdown.iva = Math.round(breakdown.subtotalConMargen * (IVA_PERCENT / 100));
   breakdown.totalCost = breakdown.subtotalConMargen + breakdown.iva;
-  breakdown.costPerUnit = Math.round(breakdown.totalCost / quantity);
+  breakdown.costPerUnit = quantity > 0 ? Math.round(breakdown.totalCost / quantity) : 0;
   breakdown.marginPercent = marginPercent;
   breakdown.ivaPercent = IVA_PERCENT;
 

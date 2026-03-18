@@ -11,7 +11,11 @@ const DEFAULT_MERMA_PERCENT = 10;
  */
 export function lookupVolumePrice(allData, processName, quantity) {
   const candidates = allData.pricing
-    .filter(p => p.proceso === processName && quantity >= p.cantidad_minima)
+    .filter(p =>
+      p.proceso === processName &&
+      quantity >= p.cantidad_minima &&
+      (p.cantidad_maxima == null || quantity <= p.cantidad_maxima)
+    )
     .sort((a, b) => b.cantidad_minima - a.cantidad_minima);
 
   return candidates.length > 0 ? candidates[0].valor_aplicado : null;

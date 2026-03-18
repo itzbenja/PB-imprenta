@@ -55,15 +55,17 @@ export const getSupplies = () => getAll(COLLECTIONS.supplies);
 export const createSupply = (data) => create(COLLECTIONS.supplies, {
   tipo_insumo: data.tipo_insumo,
   nombre_insumo: data.nombre_insumo,
+  formato: data.formato || null,
+  tipo_papel: data.tipo_papel || null,
   gramaje: data.gramaje ? Number(data.gramaje) : null,
   unidades_por_paquete: Number(data.unidades_por_paquete),
   costo_paquete: Number(data.costo_paquete),
 });
 export const updateSupply = (id, data) => {
   const fields = {};
-  for (const k of ['tipo_insumo', 'nombre_insumo', 'gramaje', 'unidades_por_paquete', 'costo_paquete']) {
+  for (const k of ['tipo_insumo', 'nombre_insumo', 'formato', 'tipo_papel', 'gramaje', 'unidades_por_paquete', 'costo_paquete']) {
     if (data[k] !== undefined) {
-      fields[k] = ['tipo_insumo', 'nombre_insumo'].includes(k) ? data[k] : Number(data[k]);
+      fields[k] = ['tipo_insumo', 'nombre_insumo', 'formato', 'tipo_papel'].includes(k) ? (data[k] || null) : Number(data[k]);
     }
   }
   return update(COLLECTIONS.supplies, id, fields);
@@ -102,6 +104,9 @@ export const updatePricing = (id, data) => {
 export const deletePricing = (id) => remove(COLLECTIONS.pricing, id);
 
 // ── Cotizaciones ──────────────────────────────────────────────
+export const getCotizaciones = () => getAll('PB_Cotizaciones');
+export const deleteCotizacion = (id) => remove('PB_Cotizaciones', id);
+
 export async function saveCotizacion(quote, formData) {
   return addDoc(collection(db, 'PB_Cotizaciones'), {
     fecha: serverTimestamp(),
@@ -119,7 +124,7 @@ export async function saveCotizacion(quote, formData) {
     maquina_interior: quote.interior?.machine || null,
     papel_interior: formData?.interiorSupplyId || null,
     papel_tapa: formData?.coverSupplyId || null,
-    terminacion: formData?.bindingProcessId || null,
+    terminacion: formData?.bindingProcessId || quote.finishing?.binding?.type || null,
   });
 }
 

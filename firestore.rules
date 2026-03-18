@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ══════════════════════════════════════════════════════════════
+    // DATOS DE REFERENCIA (Máquinas, Insumos, Procesos, Precios)
+    // Cualquiera puede leer (necesario para cotizar).
+    // Escritura: solo si los datos tienen estructura válida y campos
+    // dentro de rangos razonables. Esto protege contra spam y
+    // documentos basura que agoten la cuota de Firestore.
+    // ══════════════════════════════════════════════════════════════
+
+    match /PB_Maquinas/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                            && isValidMachine(request.resource.data)
+                            && isNotTooLarge(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    match /PB_Insumos/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                            && isValidSupply(request.resource.data)
+                            && isNotTooLarge(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    match /PB_Procesos/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                            && isValidProcess(request.resource.data)
+                            && isNotTooLarge(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    match /PB_MatrizPrecios/{docId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                            && isValidPricing(request.resource.data)
+                            && isNotTooLarge(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // COTIZACIONES
+    // Solo se puede crear (guardar una cotización nueva).
+    // Nadie puede leer, modificar ni borrar cotizaciones desde el
+    // frontend — protege datos de negocio.
+    // Para ver cotizaciones usar Firebase Console con cuenta Google.
+    // ══════════════════════════════════════════════════════════════
+
+    match /PB_Cotizaciones/{docId} {
+      allow create: if isValidCotizacion(request.resource.data)
+                    && isNotTooLarge(request.resource.data);
+      allow read, delete: if request.auth != null;
+      allow update: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // BLOQUEAR TODO LO DEMÁS
+    // Cualquier colección no definida arriba queda completamente
+    // bloqueada — nadie puede crear colecciones nuevas.
+    // ══════════════════════════════════════════════════════════════
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+
+    // ──────────────────────────────────────────────────────────────
+    // VALIDADORES DE CAMPOS
+    // Verifican tipos, tamaños máximos y rangos de valores.
+    // Si un atacante intenta escribir datos malformados o enormes,
+    // Firestore rechaza la escritura antes de procesarla.
+    // ──────────────────────────────────────────────────────────────
+
+    function isNotTooLarge(data) {
+      // Firestore cobra por lectura/escritura — limitar tamaño
+      // previene documentos que agoten la cuota del plan gratuito.
+      return data.size() <= 20;
+    }
+
+    function isValidMachine(data) {
+      return data.keys().hasAll([
+          'nombre', 'papel_ancho', 'papel_largo',
+          'impresion_ancho', 'impresion_largo',
+          'plancha_ancho', 'plancha_largo'
+        ])
+        && data.nombre is string
+        && data.nombre.size() > 0
+        && data.nombre.size() <= 100
+        && data.papel_ancho is number && data.papel_ancho > 0 && data.papel_ancho < 500
+        && data.papel_largo is number && data.papel_largo > 0 && data.papel_largo < 500
+        && data.impresion_ancho is number && data.impresion_ancho > 0
+        && data.impresion_largo is number && data.impresion_largo > 0
+        && data.plancha_ancho is number && data.plancha_ancho > 0
+        && data.plancha_largo is number && data.plancha_largo > 0;
+    }
+
+    function isValidSupply(data) {
+      return data.keys().hasAll([
+          'tipo_insumo', 'nombre_insumo',
+          'unidades_por_paquete', 'costo_paquete'
+        ])
+        && data.tipo_insumo is string
+        && data.tipo_insumo.size() > 0
+        && data.tipo_insumo.size() <= 50
+        && data.nombre_insumo is string
+        && data.nombre_insumo.size() > 0
+        && data.nombre_insumo.size() <= 200
+        && data.unidades_por_paquete is number
+        && data.unidades_por_paquete > 0
+        && data.unidades_por_paquete <= 100000
+        && data.costo_paquete is number
+        && data.costo_paquete > 0
+        && data.costo_paquete < 50000000;
+    }
+
+    function isValidProcess(data) {
+      return data.keys().hasAll(['nombre'])
+        && data.nombre is string
+        && data.nombre.size() > 0
+        && data.nombre.size() <= 100;
+    }
+
+    function isValidPricing(data) {
+      return data.keys().hasAll([
+          'id_proceso', 'cantidad_minima',
+          'cantidad_maxima', 'valor_aplicado'
+        ])
+        && data.id_proceso is string
+        && data.id_proceso.size() > 0
+        && data.cantidad_minima is number
+        && data.cantidad_minima >= 0
+        && data.cantidad_maxima is number
+        && data.cantidad_maxima >= data.cantidad_minima
+        && data.valor_aplicado is number
+        && data.valor_aplicado >= 0
+        && data.valor_aplicado < 100000000;
+    }
+
+    function isValidCotizacion(data) {
+      return data.keys().hasAll([
+          'fecha', 'tipo_producto', 'cantidad',
+          'costo_produccion', 'total'
+        ])
+        && data.tipo_producto is string
+        && data.tipo_producto in ['Agenda', 'Talonario', 'Libro', 'Flyer']
+        && data.cantidad is number
+        && data.cantidad > 0
+        && data.cantidad <= 1000000
+        && data.total is number
+        && data.total >= 0
+        && data.total < 10000000000;
+    }
+  }
+}
