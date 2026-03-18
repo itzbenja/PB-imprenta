@@ -189,14 +189,13 @@ body::before {
   align-items: start;
 }
 
-/* When results are empty, form takes full width */
+/* When results are empty: form centrado arriba */
 .main-grid:has(#resultsContainer:empty) {
   grid-template-columns: 1fr;
 }
 .main-grid:has(#resultsContainer:empty) .form-container {
-  max-width: 700px;
+  max-width: 620px;
   margin: 0 auto;
-  width: 100%;
 }
 
 @media (max-width: 1024px) {
