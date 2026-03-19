@@ -1943,3 +1943,74 @@ tr.editing td {
     color: #333 !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   QUICK QUOTE TABLE
+   ════════════════════════════════════════════════════════════ */
+.qq-wrapper { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.qq-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.qq-title { font-size: 1.3rem; font-weight: 800; color: #fff; margin: 0; }
+.qq-subtitle { font-size: 0.8rem; color: #666; margin-top: 4px; }
+.qq-clear { background: none; border: 1px solid #444; color: #888; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.qq-clear:hover { color: #f87171; border-color: #f87171; }
+
+.qq-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); }
+.qq-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.qq-table th { background: rgba(255,255,255,0.04); color: #888; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; white-space: nowrap; }
+.qq-table th.text-right { text-align: right; }
+.qq-table th.th-actions { width: 60px; }
+
+/* Input row */
+.qq-input-row { background: rgba(0,0,0,0.3); }
+.qq-input-row td { padding: 8px 6px; }
+.qq-input { width: 100%; background: var(--surface-2, #1a2a22); border: 1px solid #333; border-radius: 6px; padding: 7px 10px; color: #e0e0e0; font-size: 0.85rem; outline: none; transition: border-color 0.2s; }
+.qq-input:focus { border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+.qq-input::placeholder { color: #555; }
+.qq-input-sm { width: 90px; }
+.qq-select { width: 100%; background: var(--surface-2, #1a2a22); border: 1px solid #333; border-radius: 6px; padding: 7px 8px; color: #e0e0e0; font-size: 0.8rem; outline: none; cursor: pointer; }
+.qq-select:focus { border-color: #22c55e; }
+.qq-select-sm { width: 80px; }
+.qq-placeholder { color: #444; font-size: 0.75rem; }
+
+/* Add button */
+.qq-btn-add { width: 36px; height: 36px; border: none; border-radius: 8px; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.qq-btn-add:hover { transform: scale(1.1); box-shadow: 0 0 12px rgba(34,197,94,0.4); }
+
+/* Data rows */
+.qq-row { background: rgba(255,255,255,0.02); transition: background 0.15s; }
+.qq-row:hover { background: rgba(255,255,255,0.06); }
+.qq-row td { padding: 10px 12px; color: #ccc; border-top: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+.qq-cell-mono { font-family: 'Courier New', monospace; font-size: 0.8rem; letter-spacing: 0.5px; }
+.qq-cell-small { font-size: 0.78rem; color: #999; }
+.qq-cell-dim { color: #777; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+.qq-cell-total { color: #fff; font-weight: 700; font-family: 'Courier New', monospace; }
+.qq-badge { display: inline-block; background: rgba(255,255,255,0.08); color: #ccc; font-size: 0.72rem; font-family: 'Courier New', monospace; padding: 2px 8px; border-radius: 4px; }
+
+/* Row action buttons (hover only) */
+.td-actions { text-align: center; }
+.qq-row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+.qq-row:hover .qq-row-actions { opacity: 1; }
+.qq-btn-icon { width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.15s; }
+.qq-btn-dup:hover { color: #22c55e; background: rgba(34,197,94,0.1); }
+.qq-btn-del:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+/* Empty state */
+.qq-empty { text-align: center; padding: 2.5rem 1rem !important; color: #555; font-size: 0.85rem; }
+.qq-plus-hint { display: inline-block; background: #22c55e; color: #fff; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; font-size: 0.7rem; font-weight: 800; vertical-align: middle; }
+
+/* Totals row */
+.qq-totals { background: rgba(255,255,255,0.04); border-top: 2px solid rgba(255,255,255,0.1); }
+.qq-totals td { padding: 12px; }
+.qq-totals-label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.qq-grand-total { color: #22c55e; font-family: 'Courier New', monospace; font-size: 1rem; font-weight: 800; }
+
+.text-right { text-align: right; }
+
+/* ── Quick Quote responsive ──────────────────────────────── */
+@media (max-width: 768px) {
+  .qq-wrapper { padding: 1rem 0.5rem; }
+  .qq-table { font-size: 0.75rem; }
+  .qq-input, .qq-select { padding: 5px 6px; font-size: 0.75rem; }
+  .qq-input-sm { width: 70px; }
+  .qq-btn-add { width: 30px; height: 30px; font-size: 1rem; }
+}
