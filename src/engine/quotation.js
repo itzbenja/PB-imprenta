@@ -39,6 +39,8 @@ export function generateQuotation(allData, params) {
     mermaPercent = 10,
     marginPercent = DEFAULT_MARGIN_PERCENT,
     manualPiecesPerSheet = null,
+    pruebaDigital = false,
+    pruebaDigitalCosto = 0,
   } = params;
 
   const machines = getMachines(allData);
@@ -393,12 +395,16 @@ export function generateQuotation(allData, params) {
     }
   }
 
+  // ── PRUEBA DIGITAL (VB) — costo fijo fuera del margen ────────
+  breakdown.pruebaDigital = pruebaDigital;
+  breakdown.pruebaDigitalCosto = pruebaDigital ? Math.round(pruebaDigitalCosto) : 0;
+
   // ── COST SUMMARY (Producción + Margen + IVA) ─────────────────
   breakdown.costoProduccion = breakdown.costoPapel + breakdown.costoProcesos;
   breakdown.margenGanancia = Math.round(breakdown.costoProduccion * (marginPercent / 100));
   breakdown.subtotalConMargen = breakdown.costoProduccion + breakdown.margenGanancia;
   breakdown.iva = Math.round(breakdown.subtotalConMargen * (IVA_PERCENT / 100));
-  breakdown.totalCost = breakdown.subtotalConMargen + breakdown.iva;
+  breakdown.totalCost = breakdown.subtotalConMargen + breakdown.iva + breakdown.pruebaDigitalCosto;
   breakdown.costPerUnit = quantity > 0 ? Math.round(breakdown.totalCost / quantity) : 0;
   breakdown.marginPercent = marginPercent;
   breakdown.ivaPercent = IVA_PERCENT;

@@ -156,6 +156,7 @@ export function renderForm(container, allData, onSubmit) {
             <option value="Anillado">Anillado</option>
             <option value="Cosido">Cosido</option>
             <option value="Pegado">Pegado (Hot Melt)</option>
+            <option value="Cosido Lomo Cuadrado">Cosido Lomo Cuadrado (Costura hilo + Hot Melt)</option>
           </select>
         </div>
       </div>
@@ -212,6 +213,20 @@ export function renderForm(container, allData, onSubmit) {
         </div>
       </div>
 
+      <!-- ── PRUEBA DIGITAL ──────────────────────────────────────── -->
+      <div class="shared-options" style="margin-top:0;border-top:none;padding-top:0;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="checkbox-item" style="margin-bottom:8px;">
+            <input type="checkbox" id="chkPruebaDigital" />
+            <span>Incluir prueba digital (VB)</span>
+          </label>
+          <div id="pruebaDigitalGroup" style="display:none;">
+            <label for="pruebaDigitalCosto" style="font-size:11px;color:#aaa;margin-bottom:4px;display:block;">Costo prueba digital ($)</label>
+            <input type="number" id="pruebaDigitalCosto" min="0" value="15000" style="width:100%;" />
+          </div>
+        </div>
+      </div>
+
       <button type="submit" id="submitBtn">
         <span class="btn-icon">⚡</span> Cotizar
       </button>
@@ -265,6 +280,13 @@ export function renderForm(container, allData, onSubmit) {
   renderViasPapel(2);
   container.querySelector('#talVias').addEventListener('change', e => renderViasPapel(+e.target.value));
 
+  // ── Prueba digital toggle ────────────────────────────────────
+  const chkPrueba = container.querySelector('#chkPruebaDigital');
+  const pruebaGroup = container.querySelector('#pruebaDigitalGroup');
+  chkPrueba.addEventListener('change', () => {
+    pruebaGroup.style.display = chkPrueba.checked ? '' : 'none';
+  });
+
   // ── Inputs compartidos ───────────────────────────────────────
   const marginSlider = container.querySelector('#marginPercent');
   const mermaSlider  = container.querySelector('#mermaPercent');
@@ -310,8 +332,12 @@ export function renderForm(container, allData, onSubmit) {
   container.querySelector('#quoteForm').addEventListener('submit', e => {
     e.preventDefault();
     clearErrors();
-    const marginPercent = parseFloat(marginSlider.value);
-    const mermaPercent  = parseFloat(mermaSlider.value);
+    const marginPercent    = parseFloat(marginSlider.value);
+    const mermaPercent     = parseFloat(mermaSlider.value);
+    const pruebaDigital    = container.querySelector('#chkPruebaDigital').checked;
+    const pruebaDigitalCosto = pruebaDigital
+      ? parseFloat(container.querySelector('#pruebaDigitalCosto').value) || 0
+      : 0;
 
     if (currentType === 'Agenda') {
       const ok = validatePositiveInt('quantity', 'Cantidad', 1)
@@ -342,6 +368,8 @@ export function renderForm(container, allData, onSubmit) {
         hasBinding:              false,
         bindingType:             'Anillado',
         marginPercent,
+        pruebaDigital,
+        pruebaDigitalCosto,
       });
 
     } else if (currentType === 'Talonario') {
@@ -375,6 +403,8 @@ export function renderForm(container, allData, onSubmit) {
         },
         mermaPercent,
         marginPercent,
+        pruebaDigital,
+        pruebaDigitalCosto,
       });
 
     } else if (currentType === 'Libro') {
@@ -415,6 +445,8 @@ export function renderForm(container, allData, onSubmit) {
         bindingProcessId:        hasBinding ? container.querySelector('#libTipoEnc').value : null,
         mermaPercent,
         marginPercent,
+        pruebaDigital,
+        pruebaDigitalCosto,
       });
 
     } else if (currentType === 'Flyer') {
@@ -440,6 +472,8 @@ export function renderForm(container, allData, onSubmit) {
         hasBinding:              false,
         mermaPercent,
         marginPercent,
+        pruebaDigital,
+        pruebaDigitalCosto,
       });
     }
   });

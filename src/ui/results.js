@@ -129,6 +129,7 @@ export function renderResults(container, quote) {
           <div class="cost-row margin-row"><span>Margen de Ganancia (${quote.marginPercent}%)</span><span>+ ${fmt(quote.margenGanancia)}</span></div>
           <div class="cost-row"><span>Subtotal con Margen</span><span>${fmt(quote.subtotalConMargen)}</span></div>
           <div class="cost-row iva-row"><span>IVA (${quote.ivaPercent}%)</span><span>+ ${fmt(quote.iva)}</span></div>
+          ${quote.pruebaDigital ? `<div class="cost-row" style="color:#f4a261;"><span>Prueba digital (VB)</span><span>+ ${fmt(quote.pruebaDigitalCosto)}</span></div>` : ''}
         </div>
       </div>
       <div class="total-card">
@@ -325,6 +326,11 @@ export function renderResults(container, quote) {
           <span>IVA (${quote.ivaPercent}%)</span>
           <span>+ ${fmt(quote.iva)}</span>
         </div>
+        ${quote.pruebaDigital ? `
+        <div class="cost-row" style="color:#f4a261;">
+          <span>Prueba digital (VB)</span>
+          <span>+ ${fmt(quote.pruebaDigitalCosto)}</span>
+        </div>` : ''}
       </div>
     </div>`;
 
