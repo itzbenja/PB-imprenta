@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Propuesta Técnica y Comercial — Sistema de Cotización PB Impresión</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; font-size: 13px; }
+
+  /* PAGE BREAKS */
+  .page { padding: 40px 50px; min-height: 100vh; page-break-after: always; }
+  .page:last-child { page-break-after: avoid; }
+
+  /* HEADER */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; padding-bottom: 20px; border-bottom: 3px solid #1a1a2e; }
+  .header-logo { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+  .header-logo span { color: #e63946; }
+  .header-meta { text-align: right; font-size: 11px; color: #555; line-height: 1.7; }
+  .header-meta strong { color: #1a1a2e; font-size: 12px; }
+
+  /* TITLES */
+  h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+  h2 { font-size: 17px; font-weight: 800; margin: 28px 0 12px; color: #1a1a2e; border-left: 4px solid #e63946; padding-left: 10px; }
+  h3 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: #333; }
+  .subtitle { font-size: 14px; color: #555; margin-bottom: 28px; }
+
+  /* BADGE */
+  .badge { display: inline-block; background: #e63946; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+  .badge-green { background: #2d6a4f; }
+  .badge-blue { background: #1d6fa4; }
+
+  /* SUMMARY BOXES */
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; text-align: center; }
+  .summary-box .value { font-size: 22px; font-weight: 900; color: #e63946; margin-bottom: 4px; }
+  .summary-box .label { font-size: 11px; color: #666; }
+
+  /* COMPARISON TABLE */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  thead { background: #1a1a2e; color: #fff; }
+  thead th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 700; }
+  thead th:first-child { border-radius: 6px 0 0 0; }
+  thead th:last-child { border-radius: 0 6px 0 0; }
+  tbody tr:nth-child(even) { background: #f8f9fa; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 12px; vertical-align: top; line-height: 1.5; }
+  tbody td:first-child { font-weight: 600; }
+  .winner { background: #e8f5e9 !important; }
+  .winner td:first-child { color: #2d6a4f; }
+
+  /* FEATURE LIST */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .feature-item { display: flex; align-items: flex-start; gap: 8px; background: #f8f9fa; border-radius: 6px; padding: 10px 12px; }
+  .feature-icon { font-size: 16px; flex-shrink: 0; }
+  .feature-text strong { display: block; font-size: 12px; color: #1a1a2e; }
+  .feature-text span { font-size: 11px; color: #666; }
+
+  /* PRICING TABLE */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .pricing-card { border: 2px solid #e0e0e0; border-radius: 10px; padding: 20px; text-align: center; }
+  .pricing-card.recommended { border-color: #e63946; }
+  .pricing-card .plan-name { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+  .pricing-card .plan-price { font-size: 28px; font-weight: 900; color: #e63946; margin: 8px 0 2px; }
+  .pricing-card .plan-period { font-size: 11px; color: #888; margin-bottom: 12px; }
+  .pricing-card ul { text-align: left; list-style: none; font-size: 11px; color: #555; }
+  .pricing-card ul li { padding: 3px 0; }
+  .pricing-card ul li::before { content: "✓ "; color: #2d6a4f; font-weight: 700; }
+  .rec-label { background: #e63946; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+
+  /* COST BREAKDOWN */
+  .cost-table { width: 100%; }
+  .cost-table td { padding: 8px 12px; }
+  .cost-table .section-header td { background: #1a1a2e; color: #fff; font-weight: 700; font-size: 12px; }
+  .cost-table .subtotal td { background: #f0f0f0; font-weight: 700; }
+  .cost-table .total-row td { background: #e63946; color: #fff; font-weight: 900; font-size: 15px; }
+  .cost-table td:last-child { text-align: right; }
+  .note { font-size: 11px; color: #888; font-style: italic; margin-top: 6px; }
+
+  /* TIMELINE */
+  .timeline { margin: 16px 0; }
+  .timeline-item { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+  .timeline-dot { width: 28px; height: 28px; border-radius: 50%; background: #1a1a2e; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .timeline-dot.done { background: #2d6a4f; }
+  .timeline-content strong { font-size: 12px; display: block; }
+  .timeline-content span { font-size: 11px; color: #666; }
+
+  /* CHECK/CROSS */
+  .yes { color: #2d6a4f; font-weight: 700; }
+  .no { color: #c0392b; font-weight: 700; }
+  .mid { color: #e67e22; font-weight: 700; }
+
+  /* FOOTER */
+  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 10px; color: #999; display: flex; justify-content: space-between; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 30px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ PÁGINA 1 -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión</span> & Terminación</div>
+    <div class="header-meta">
+      <strong>Propuesta Técnica y Comercial</strong><br>
+      Sistema de Cotización Automatizado<br>
+      Marzo 2026 — Documento Confidencial
+    </div>
+  </div>
+
+  <h1>Sistema de Cotización Inteligente</h1>
+  <p class="subtitle">Propuesta de plataforma web para automatización de presupuestos en imprenta</p>
+
+  <div class="summary-grid">
+    <div class="summary-box">
+      <div class="value">4</div>
+      <div class="label">Tipos de producto<br>Agenda · Talonario · Libro · Flyer</div>
+    </div>
+    <div class="summary-box">
+      <div class="value">327</div>
+      <div class="label">Insumos cargados<br>con precios reales</div>
+    </div>
+    <div class="summary-box">
+      <div class="value">$0/mes</div>
+      <div class="label">Costo de infraestructura<br>en uso normal</div>
+    </div>
+  </div>
+
+  <h2>¿Qué es este sistema?</h2>
+  <p style="margin-bottom:14px; line-height:1.7;">
+    Una aplicación web que reemplaza las planillas Excel de cotización por un sistema en tiempo real, accesible desde cualquier dispositivo. El vendedor ingresa las especificaciones del pedido y el sistema calcula automáticamente el costo de producción, margen de ganancia e IVA — en segundos.
+  </p>
+
+  <h2>Funcionalidades principales</h2>
+  <div class="feature-grid">
+    <div class="feature-item">
+      <div class="feature-icon">🧮</div>
+      <div class="feature-text">
+        <strong>Motor de cotización automático</strong>
+        <span>Calcula papel, procesos, planchas, laminado y terminaciones con precios reales desde la base de datos</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📐</div>
+      <div class="feature-text">
+        <strong>Visualizador geométrico de imposición</strong>
+        <span>Grafica en tiempo real el rendimiento del pliego para el operador de guillotina — muestra distribución, rotación y merma</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💰</div>
+      <div class="feature-text">
+        <strong>Margen de ganancia configurable</strong>
+        <span>Slider de 0–100% + merma de papel 5–20%, IVA 19% automático incluido en el total</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📦</div>
+      <div class="feature-text">
+        <strong>Terminaciones completas</strong>
+        <span>Laminado (Flyers, Tapas, Agendas), Anillado, Cosido, Pegado, Engomado, Prepicado, Corchete y Cinta</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔐</div>
+      <div class="feature-text">
+        <strong>Panel de administración protegido</strong>
+        <span>Login con email/contraseña. CRUD completo de máquinas, insumos, procesos y precios</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">☁️</div>
+      <div class="feature-text">
+        <strong>Precios en tiempo real</strong>
+        <span>El admin actualiza un precio en Firebase y todos los usuarios ven el cambio sin recargar la página</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📋</div>
+      <div class="feature-text">
+        <strong>Historial de cotizaciones</strong>
+        <span>Cada cotización se guarda automáticamente en la nube con fecha, tipo de producto y costos</span>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-text">
+        <strong>Seguridad en base de datos</strong>
+        <span>Reglas de Firestore: validación de campos, rangos y tipos. Solo datos válidos son aceptados</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PB Impresión & Terminación — Sistema de Cotización v1.0</span>
+    <span>Página 1 de 3</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PÁGINA 2 -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión</span> & Terminación</div>
+    <div class="header-meta">
+      <strong>Comparativo de Infraestructura</strong><br>
+      Firebase vs AWS vs Supabase<br>
+      Marzo 2026
+    </div>
+  </div>
+
+  <h2>Comparativo: ¿Dónde alojar el sistema?</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Criterio</th>
+        <th>🔥 Firebase <span style="font-weight:400;font-size:10px;">(Google)</span></th>
+        <th>🐘 Supabase <span style="font-weight:400;font-size:10px;">(PostgreSQL)</span></th>
+        <th>☁️ AWS <span style="font-weight:400;font-size:10px;">(Amazon)</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="winner">
+        <td>Costo mensual estimado</td>
+        <td><strong>$0 – $1 USD</strong><br><span style="font-size:11px;color:#555;">Free tier cubre uso normal</span></td>
+        <td><strong>$0 – $25 USD</strong><br><span style="font-size:11px;color:#555;">Free tier limitado</span></td>
+        <td><strong>$15 – $80 USD</strong><br><span style="font-size:11px;color:#555;">Sin free tier real</span></td>
+      </tr>
+      <tr>
+        <td>Dificultad de configuración</td>
+        <td><span class="yes">● Muy fácil</span></td>
+        <td><span class="mid">● Media</span></td>
+        <td><span class="no">● Compleja</span></td>
+      </tr>
+      <tr class="winner">
+        <td>Hosting del frontend</td>
+        <td><span class="yes">✓ Incluido gratis</span></td>
+        <td><span class="no">✗ Requiere Vercel/Netlify aparte</span></td>
+        <td><span class="mid">⚠ S3 + CloudFront, configuración manual</span></td>
+      </tr>
+      <tr>
+        <td>Autenticación (login)</td>
+        <td><span class="yes">✓ Incluida gratis</span></td>
+        <td><span class="yes">✓ Incluida gratis</span></td>
+        <td><span class="mid">⚠ Cognito: $0.0055/usuario activo</span></td>
+      </tr>
+      <tr class="winner">
+        <td>Tiempo para publicar</td>
+        <td><span class="yes">30 minutos</span></td>
+        <td><span class="mid">2–4 horas</span></td>
+        <td><span class="no">1–3 días</span></td>
+      </tr>
+      <tr>
+        <td>Base de datos</td>
+        <td>NoSQL (Firestore)<br><span style="font-size:11px;color:#555;">Ya integrado en el proyecto</span></td>
+        <td>PostgreSQL<br><span style="font-size:11px;color:#555;">Requiere reescribir queries</span></td>
+        <td>DynamoDB / RDS<br><span style="font-size:11px;color:#555;">Requiere reescribir todo</span></td>
+      </tr>
+      <tr class="winner">
+        <td>Escalabilidad</td>
+        <td><span class="yes">✓ Automática</span></td>
+        <td><span class="yes">✓ Automática</span></td>
+        <td><span class="yes">✓ Máxima del mercado</span></td>
+      </tr>
+      <tr>
+        <td>Soporte / documentación</td>
+        <td><span class="yes">● Excelente</span></td>
+        <td><span class="mid">● Buena</span></td>
+        <td><span class="mid">● Muy amplia pero compleja</span></td>
+      </tr>
+      <tr class="winner">
+        <td>Migración desde estado actual</td>
+        <td><span class="yes">✓ Cero cambios — ya es Firebase</span></td>
+        <td><span class="no">✗ Requiere reescribir DB completa</span></td>
+        <td><span class="no">✗ Requiere reescribir todo</span></td>
+      </tr>
+      <tr>
+        <td>Conocimiento técnico necesario</td>
+        <td><span class="yes">Bajo</span></td>
+        <td><span class="mid">Medio</span></td>
+        <td><span class="no">Alto</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:14px 16px;margin-bottom:24px;">
+    <strong style="color:#2d6a4f;">✓ Recomendación: Firebase</strong><br>
+    <span style="font-size:12px;line-height:1.7;">El sistema ya está 100% construido sobre Firebase. Migrar a Supabase o AWS requeriría reescribir la capa de datos completa (semanas de trabajo) sin ningún beneficio real para el tamaño de esta empresa. Firebase se publica en 30 minutos con <code>firebase deploy</code>.</span>
+  </div>
+
+  <h2>Costos reales de Firebase para PB Impresión</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Servicio Firebase</th>
+        <th>Límite gratuito (Spark)</th>
+        <th>Uso estimado mensual</th>
+        <th>Costo estimado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="winner">
+        <td>Firestore — Lecturas</td>
+        <td>50.000 / día</td>
+        <td>~500 / día</td>
+        <td><strong>$0</strong></td>
+      </tr>
+      <tr class="winner">
+        <td>Firestore — Escrituras</td>
+        <td>20.000 / día</td>
+        <td>~50 / día</td>
+        <td><strong>$0</strong></td>
+      </tr>
+      <tr class="winner">
+        <td>Firebase Hosting</td>
+        <td>10 GB almacenamiento</td>
+        <td>~5 MB</td>
+        <td><strong>$0</strong></td>
+      </tr>
+      <tr class="winner">
+        <td>Firebase Auth</td>
+        <td>10.000 usuarios/mes</td>
+        <td>2–5 usuarios</td>
+        <td><strong>$0</strong></td>
+      </tr>
+      <tr>
+        <td colspan="3" style="font-weight:800;text-align:right;background:#1a1a2e;color:#fff;">TOTAL MENSUAL ESTIMADO</td>
+        <td style="background:#1a1a2e;color:#fff;font-weight:900;text-align:right;font-size:16px;">$0 USD</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note">* Si la empresa crece a miles de cotizaciones diarias, el costo sería menor a $2 USD/mes en plan Blaze (pago por uso).</p>
+
+  <div class="footer">
+    <span>PB Impresión & Terminación — Sistema de Cotización v1.0</span>
+    <span>Página 2 de 3</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PÁGINA 3 -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión</span> & Terminación</div>
+    <div class="header-meta">
+      <strong>Cotización del Proyecto</strong><br>
+      Desarrollo + Implementación<br>
+      Marzo 2026
+    </div>
+  </div>
+
+  <h2>Estado actual del proyecto</h2>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot done">✓</div>
+      <div class="timeline-content">
+        <strong>Motor de cálculo completo</strong>
+        <span>Imposición, costos de papel, procesos, terminaciones, margen e IVA — los 4 tipos de producto</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot done">✓</div>
+      <div class="timeline-content">
+        <strong>Base de datos en Firebase</strong>
+        <span>327 insumos con precios reales (Walter Lund SPA / JHE), 15 PDFs de proveedores importados</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot done">✓</div>
+      <div class="timeline-content">
+        <strong>Visualizador geométrico de imposición</strong>
+        <span>Interfaz gráfica que muestra distribución de piezas en el pliego para el operador de guillotina</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot done">✓</div>
+      <div class="timeline-content">
+        <strong>Panel de administración con login</strong>
+        <span>CRUD completo protegido por autenticación Firebase. El admin actualiza precios en tiempo real</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot done">✓</div>
+      <div class="timeline-content">
+        <strong>Seguridad de base de datos</strong>
+        <span>Reglas Firestore con validación de campos, tipos y rangos. Protección contra escrituras maliciosas</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">→</div>
+      <div class="timeline-content">
+        <strong>Publicación en Firebase Hosting</strong>
+        <span>Pendiente: deploy final con dominio personalizado y ajustes finales con el equipo</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Cotización del proyecto</h2>
+
+  <table class="cost-table">
+    <tbody>
+      <tr class="section-header"><td colspan="2">DESARROLLO — Ya completado</td></tr>
+      <tr>
+        <td>Análisis y diseño del sistema de cotización</td>
+        <td>$180.000</td>
+      </tr>
+      <tr>
+        <td>Motor de cálculo (imposición, papel, procesos, terminaciones)</td>
+        <td>$280.000</td>
+      </tr>
+      <tr>
+        <td>Visualizador geométrico de imposición (interfaz gráfica)</td>
+        <td>$120.000</td>
+      </tr>
+      <tr>
+        <td>Panel de administración con login y CRUD</td>
+        <td>$150.000</td>
+      </tr>
+      <tr>
+        <td>Integración Firebase (Firestore, Auth, Hosting)</td>
+        <td>$90.000</td>
+      </tr>
+      <tr>
+        <td>Carga de 327 insumos desde 15 PDFs de proveedores</td>
+        <td>$80.000</td>
+      </tr>
+      <tr>
+        <td>Seguridad y reglas de base de datos</td>
+        <td>$60.000</td>
+      </tr>
+      <tr class="subtotal"><td>Subtotal desarrollo</td><td>$960.000</td></tr>
+
+      <tr class="section-header"><td colspan="2">IMPLEMENTACIÓN — Pendiente</td></tr>
+      <tr>
+        <td>Deploy en Firebase Hosting + dominio personalizado</td>
+        <td>$40.000</td>
+      </tr>
+      <tr>
+        <td>Capacitación de administrador (1 sesión, 2 horas)</td>
+        <td>$50.000</td>
+      </tr>
+      <tr>
+        <td>Ajustes finales post-prueba (1 semana de correcciones)</td>
+        <td>$80.000</td>
+      </tr>
+      <tr class="subtotal"><td>Subtotal implementación</td><td>$170.000</td></tr>
+
+      <tr class="total-row"><td>TOTAL PROYECTO</td><td>$150.000 CLP</td></tr>
+    </tbody>
+  </table>
+  <p class="note">* Precios en pesos chilenos. No incluye IVA. El sistema queda 100% en propiedad de PB Impresión.</p>
+
+  <div class="footer">
+    <span>PB Impresión & Terminación — Sistema de Cotización v1.0</span>
+    <span>Página 3 de 3</span>
+  </div>
+</div>
+
+</body>
+</html>
