@@ -178,7 +178,7 @@ async function main() {
           renderLoginForm();
         }
       } else if (isQuickQuote) {
-        renderQuickQuote(document.getElementById('quickQuoteContainer'));
+        renderQuickQuote(document.getElementById('quickQuoteContainer'), allData);
       } else if (isCalculator) {
         renderCalculator(document.getElementById('calculatorContainer'));
       } else {

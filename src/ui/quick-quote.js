@@ -1,32 +1,72 @@
 /**
  * quick-quote.js — Tabla de Cotización Rápida (vanilla JS).
- * Grilla tipo spreadsheet para cotizar múltiples productos de una vez.
+ * Conectado al motor real de cotización (generateQuotation).
  */
 
-const COLORES = ['1x0', '1x1', '2x0', '2x2', '4x0', '4x1', '4x4'];
-const TERMINACIONES = ['Corte', 'Laminado', 'Anillado', 'Cosido', 'Pegado', 'Engomado', 'Prepicado', 'Sin terminación'];
-const PAPELES = ['Bond 75gr', 'Bond 90gr', 'Couché 130gr', 'Couché 170gr', 'Couché 300gr', 'Cartulina 200gr', 'Autocopia CFB 55gr'];
+import { generateQuotation } from '../engine/quotation.js';
 
-const IVA_RATE = 0.19;
+const COLORES = [
+  { value: '1', doble: false, label: '1x0 — Negro una cara' },
+  { value: '1', doble: true,  label: '1x1 — Negro doble cara' },
+  { value: '2', doble: false, label: '2x0 — 2 colores una cara' },
+  { value: '2', doble: true,  label: '2x2 — 2 colores doble cara' },
+  { value: '4', doble: false, label: '4x0 — Full Color una cara' },
+  { value: '4', doble: true,  label: '4x4 — Full Color doble cara' },
+];
+
+const TERMINACIONES = ['Sin terminación', 'Corte', 'Laminado', 'Anillado', 'Cosido', 'Pegado', 'Engomado', 'Prepicado'];
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('es-CL')}`;
 
-function calcularPrecioNeto({ cantidad, color, papel }) {
-  const base = 30000;
-  const factorColor = { '1x0': 1, '1x1': 1.3, '2x0': 1.5, '2x2': 1.8, '4x0': 2.2, '4x1': 2.5, '4x4': 3 };
-  const factorPapel = papel.includes('Couché') ? 1.4 : papel.includes('Cartulina') ? 1.3 : 1;
-  const cantNum = Math.max(Number(cantidad) || 1, 1);
-  return Math.round(base * (factorColor[color] || 1) * factorPapel * (cantNum / 100));
-}
+export function renderQuickQuote(container, allData) {
+  // Build paper options from real DB data
+  const papeles = (allData.supplies || []).filter(s =>
+    s.tipo_insumo === 'Papel Interior' || s.tipo_insumo === 'Papel Tapa'
+  );
+  const papelOpts = papeles.length > 0
+    ? papeles.map((p, i) => `<option value="${i}">${p.nombre_insumo} ${p.gramaje ? p.gramaje + 'gr' : ''}</option>`).join('')
+    : `<option value="0">Sin datos — configurar en Precios</option>`;
 
-function selectHTML(id, options, selected, cls) {
-  return `<select id="${id}" class="${cls}">${options.map(o =>
-    `<option value="${o}" ${o === selected ? 'selected' : ''}>${o.toUpperCase()}</option>`
-  ).join('')}</select>`;
-}
+  const colorOpts = COLORES.map((c, i) =>
+    `<option value="${i}" ${i === 4 ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
 
-export function renderQuickQuote(container) {
+  const terOpts = TERMINACIONES.map(t =>
+    `<option value="${t}">${t}</option>`
+  ).join('');
+
   let cotizaciones = [];
+
+  function calcularConMotor(row) {
+    const papel = papeles[row.papelIdx] || { costo_paquete: 25000, unidades_por_paquete: 500 };
+    const colorObj = COLORES[row.colorIdx] || COLORES[4];
+    const [w, h] = row.tamano.split(/x/i).map(s => parseFloat(s.replace(',', '.')));
+
+    if (!w || !h || isNaN(w) || isNaN(h)) return null;
+
+    const params = {
+      productType:             'Flyer',
+      quantity:                parseInt(row.cantidad, 10) || 1,
+      pieceWidth:              w,
+      pieceHeight:             h,
+      numColors:               parseInt(colorObj.value, 10),
+      doubleSided:             colorObj.doble,
+      interiorPaperCost:       papel.costo_paquete,
+      interiorUnitsPerPackage: papel.unidades_por_paquete,
+      hasLamination:           row.terminacion === 'Laminado',
+      hasBinding:              ['Anillado', 'Cosido', 'Pegado'].includes(row.terminacion),
+      bindingType:             row.terminacion,
+      mermaPercent:            10,
+      marginPercent:           30,
+    };
+
+    try {
+      return generateQuotation(allData, params);
+    } catch (e) {
+      console.error('Error en motor:', e);
+      return null;
+    }
+  }
 
   function render() {
     const totalNeto = cotizaciones.reduce((s, c) => s + c.neto, 0);
@@ -38,7 +78,7 @@ export function renderQuickQuote(container) {
         <div class="qq-header">
           <div>
             <h2 class="qq-title">Cotización Rápida</h2>
-            <p class="qq-subtitle">Ingrese los datos y presione + para agregar a la tabla</p>
+            <p class="qq-subtitle">Ingrese los datos y presione + para agregar. Usa precios reales de Firebase.</p>
           </div>
           ${cotizaciones.length > 0 ? `<button id="qqClear" class="qq-clear">Limpiar todo</button>` : ''}
         </div>
@@ -47,12 +87,12 @@ export function renderQuickQuote(container) {
           <table class="qq-table">
             <thead>
               <tr>
-                <th>Tamaño</th>
+                <th>Tamaño (cm)</th>
                 <th>Cant</th>
-                <th>Tipo P.</th>
+                <th>Papel</th>
                 <th>Color</th>
-                <th>Ter</th>
-                <th>T. E</th>
+                <th>Terminación</th>
+                <th>Entrega</th>
                 <th class="text-right">Neto</th>
                 <th class="text-right">IVA</th>
                 <th class="text-right">Total</th>
@@ -60,13 +100,12 @@ export function renderQuickQuote(container) {
               </tr>
             </thead>
             <tbody>
-              <!-- Fila de ingreso -->
               <tr class="qq-input-row">
                 <td><input type="text" id="qqTamano" placeholder="ej: 21x28" class="qq-input" /></td>
                 <td><input type="number" id="qqCantidad" placeholder="1000" min="1" class="qq-input qq-input-sm" /></td>
-                <td>${selectHTML('qqPapel', PAPELES, 'Bond 75gr', 'qq-select')}</td>
-                <td>${selectHTML('qqColor', COLORES, '4x0', 'qq-select qq-select-sm')}</td>
-                <td>${selectHTML('qqTer', TERMINACIONES, 'Corte', 'qq-select')}</td>
+                <td><select id="qqPapel" class="qq-select">${papelOpts}</select></td>
+                <td><select id="qqColor" class="qq-select">${colorOpts}</select></td>
+                <td><select id="qqTer" class="qq-select">${terOpts}</select></td>
                 <td><input type="text" id="qqEntrega" placeholder="2 días" class="qq-input qq-input-sm" /></td>
                 <td class="text-right qq-placeholder">—</td>
                 <td class="text-right qq-placeholder">—</td>
@@ -86,8 +125,8 @@ export function renderQuickQuote(container) {
               <tr class="qq-row" data-idx="${i}">
                 <td class="qq-cell-mono">${c.tamano.toUpperCase()}</td>
                 <td>${Number(c.cantidad).toLocaleString('es-CL')}</td>
-                <td class="qq-cell-small">${c.papel}</td>
-                <td><span class="qq-badge">${c.color.toUpperCase()}</span></td>
+                <td class="qq-cell-small">${c.papelNombre}</td>
+                <td><span class="qq-badge">${c.colorLabel}</span></td>
                 <td class="qq-cell-small">${c.terminacion}</td>
                 <td class="qq-cell-small">${c.tiempoEntrega || '—'}</td>
                 <td class="text-right qq-cell-mono">${fmt(c.neto)}</td>
@@ -128,21 +167,34 @@ export function renderQuickQuote(container) {
       const cantidad = container.querySelector('#qqCantidad').value;
       if (!tamano || !cantidad) return;
 
-      const color = container.querySelector('#qqColor').value;
-      const papel = container.querySelector('#qqPapel').value;
+      const papelIdx = parseInt(container.querySelector('#qqPapel').value, 10);
+      const colorIdx = parseInt(container.querySelector('#qqColor').value, 10);
       const terminacion = container.querySelector('#qqTer').value;
       const tiempoEntrega = container.querySelector('#qqEntrega').value;
 
-      const neto = calcularPrecioNeto({ cantidad, color, papel });
-      const iva = Math.round(neto * IVA_RATE);
+      const papel = papeles[papelIdx];
+      const colorObj = COLORES[colorIdx];
+      const papelNombre = papel ? `${papel.nombre_insumo} ${papel.gramaje || ''}gr` : 'Sin datos';
+      const colorLabel = colorObj ? colorObj.label.split(' — ')[0] : '4x0';
 
-      cotizaciones.push({ tamano, cantidad, papel, color, terminacion, tiempoEntrega, neto, iva, total: neto + iva });
+      const row = { tamano, cantidad, papelIdx, colorIdx, terminacion, tiempoEntrega, papelNombre, colorLabel };
+      const quote = calcularConMotor(row);
+
+      if (!quote || quote.error) {
+        alert(quote?.error || `Formato inválido. Use "anchoXalto" (ej: 21x28)`);
+        return;
+      }
+
+      const neto = quote.subtotalConMargen;
+      const iva = quote.iva;
+      const total = quote.totalCost;
+
+      cotizaciones.push({ ...row, neto, iva, total });
       render();
     }
 
     addBtn.addEventListener('click', agregar);
 
-    // Enter en cualquier input agrega
     container.querySelectorAll('.qq-input-row input').forEach(inp => {
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } });
     });
@@ -151,10 +203,8 @@ export function renderQuickQuote(container) {
     container.querySelectorAll('.qq-btn-dup').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx, 10);
-        const c = cotizaciones[idx];
-        const neto = calcularPrecioNeto(c);
-        const iva = Math.round(neto * IVA_RATE);
-        cotizaciones.push({ ...c, neto, iva, total: neto + iva });
+        const c = { ...cotizaciones[idx] };
+        cotizaciones.push(c);
         render();
       });
     });
@@ -173,7 +223,6 @@ export function renderQuickQuote(container) {
       render();
     });
 
-    // Focus en primer input
     tamanoInput?.focus();
   }
 
