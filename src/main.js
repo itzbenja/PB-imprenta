@@ -6,13 +6,10 @@
  */
 
 import './style.css';
-import { renderForm } from './ui/form.js';
-import { renderResults } from './ui/results.js';
 import { renderAdmin } from './ui/admin.js';
 import { renderCalculator } from './ui/calculator.js';
 import { renderQuickQuote } from './ui/quick-quote.js';
-import { generateQuotation } from './engine/quotation.js';
-import { getAllData, saveCotizacion } from './db/firestore-api.js';
+import { getAllData } from './db/firestore-api.js';
 import { login, logout, isLoggedIn, onAuthChange } from './db/auth.js';
 
 async function main() {
@@ -57,7 +54,7 @@ async function main() {
       return;
     }
 
-    let currentView = 'quotation'; // 'quotation' | 'admin' | 'calculator' | 'quickquote'
+    let currentView = 'quickquote'; // 'quickquote' | 'admin' | 'calculator'
 
     function renderLoginForm() {
       const container = document.getElementById('adminContainer');
@@ -105,7 +102,6 @@ async function main() {
       const loggedIn      = isLoggedIn();
       const isAdmin       = currentView === 'admin';
       const isCalculator  = currentView === 'calculator';
-      const isQuotation   = currentView === 'quotation';
       const isQuickQuote  = currentView === 'quickquote';
 
       app.innerHTML = `
@@ -118,11 +114,8 @@ async function main() {
             </div>
           </div>
           <div class="navbar-actions">
-            <button id="btnQuotation" class="toggle-btn ${isQuotation ? 'active' : ''}">
-              💰 Cotizar
-            </button>
             <button id="btnQuickQuote" class="toggle-btn ${isQuickQuote ? 'active' : ''}">
-              📋 Rápida
+              💰 Cotizar
             </button>
             <button id="btnCalculator" class="toggle-btn ${isCalculator ? 'active' : ''}">
               ✂️ Cortes
@@ -137,26 +130,18 @@ async function main() {
           ? `<div id="adminContainer"></div>`
           : isCalculator
           ? `<div id="calculatorContainer"></div>`
-          : isQuickQuote
-          ? `<div id="quickQuoteContainer"></div>`
-          : `<div class="main-grid">
-               <div class="form-container" id="formContainer"></div>
-               <div id="resultsContainer"></div>
-             </div>`
+          : `<div id="quickQuoteContainer"></div>`
         }
       `;
 
       // Toggle buttons
-      document.getElementById('btnQuotation').addEventListener('click', async () => {
-        if (currentView !== 'quotation') {
+      document.getElementById('btnQuickQuote').addEventListener('click', async () => {
+        if (currentView !== 'quickquote') {
           const wasAdmin = currentView === 'admin';
-          currentView = 'quotation';
+          currentView = 'quickquote';
           if (wasAdmin) allData = await getAllData();
           renderApp();
         }
-      });
-      document.getElementById('btnQuickQuote').addEventListener('click', () => {
-        if (currentView !== 'quickquote') { currentView = 'quickquote'; renderApp(); }
       });
       document.getElementById('btnCalculator').addEventListener('click', () => {
         if (currentView !== 'calculator') { currentView = 'calculator'; renderApp(); }
@@ -177,20 +162,10 @@ async function main() {
         } else {
           renderLoginForm();
         }
-      } else if (isQuickQuote) {
-        renderQuickQuote(document.getElementById('quickQuoteContainer'), allData);
       } else if (isCalculator) {
         renderCalculator(document.getElementById('calculatorContainer'));
       } else {
-        const formContainer    = document.getElementById('formContainer');
-        const resultsContainer = document.getElementById('resultsContainer');
-        renderForm(formContainer, allData, (formData) => {
-          const quote = generateQuotation(allData, formData);
-          renderResults(resultsContainer, quote);
-          if (quote && !quote.error) {
-            saveCotizacion(quote, formData).catch(console.error);
-          }
-        });
+        renderQuickQuote(document.getElementById('quickQuoteContainer'), allData);
       }
     }
 
