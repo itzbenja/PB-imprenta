@@ -2003,8 +2003,7 @@ tr.editing td {
 
 /* Row action buttons (hover only) */
 .td-actions { text-align: center; }
-.qq-row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
-.qq-row:hover .qq-row-actions { opacity: 1; }
+.qq-row-actions { display: flex; gap: 4px; }
 .qq-btn-icon { width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.15s; }
 .qq-btn-dup:hover { color: #22c55e; background: rgba(34,197,94,0.1); }
 .qq-btn-del:hover { color: #f87171; background: rgba(248,113,113,0.1); }
@@ -2020,6 +2019,46 @@ tr.editing td {
 .qq-grand-total { color: #22c55e; font-family: 'Courier New', monospace; font-size: 1rem; font-weight: 800; }
 
 .text-right { text-align: right; }
+
+/* Imposition preview inside quick quote rows */
+.qq-viz-row td { padding: 0 !important; border-top: none !important; background: rgba(255,255,255,0.01); }
+.qq-viz-container { max-width: 500px; margin: 4px auto 12px; }
+.qq-viz-container .viz-container { margin: 0; }
+.qq-viz-container .viz-header h4 { font-size: 0.85rem; }
+.qq-viz-container .viz-meta { gap: 6px; }
+.qq-viz-container .viz-tag { font-size: 0.65rem; padding: 2px 6px; }
+.qq-viz-container .viz-svg-box { max-height: 220px; }
+.qq-viz-container .viz-legend { font-size: 0.7rem; }
+
+/* ── Save & PDF buttons ────────────────────────────────── */
+.qq-actions-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 12px; }
+.qq-btn-save, .qq-btn-pdf {
+  padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; transition: all 0.15s;
+}
+.qq-btn-save { background: #22c55e; color: #fff; }
+.qq-btn-save:hover { background: #16a34a; }
+.qq-btn-save:disabled { background: #555; cursor: not-allowed; }
+.qq-btn-pdf { background: #3b82f6; color: #fff; }
+.qq-btn-pdf:hover { background: #2563eb; }
+
+/* ── Size optimizer suggestions ─────────────────────────── */
+.qq-sugerencias { margin-top: 8px; }
+.qq-sug-title { font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+.qq-sug-empty { font-size: 0.75rem; color: #555; }
+.qq-sug-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.qq-sug-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left;
+  transition: all 0.15s; display: flex; flex-direction: column; gap: 2px;
+  min-width: 180px;
+}
+.qq-sug-card:hover { background: rgba(34,197,94,0.1); border-color: #22c55e; }
+.qq-sug-better { border-color: rgba(34,197,94,0.3); }
+.qq-sug-size { font-size: 0.9rem; font-weight: 700; color: #e0e0e0; font-family: 'Courier New', monospace; }
+.qq-sug-detail { font-size: 0.7rem; color: #888; }
+.qq-sug-waste { font-size: 0.7rem; color: #f59e0b; }
+.qq-sug-better .qq-sug-waste { color: #22c55e; }
 
 /* ── Quick Quote responsive ──────────────────────────────── */
 @media (max-width: 768px) {

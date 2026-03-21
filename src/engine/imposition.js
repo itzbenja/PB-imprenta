@@ -78,6 +78,41 @@ export function calculateImposition(pieceW, pieceH, machine) {
 }
 
 /**
+ * Suggest optimal piece sizes close to the requested dimensions.
+ * For each machine, finds the best cols×rows combo and calculates
+ * the ideal piece size that eliminates waste.
+ *
+ * @param {number} targetW - desired piece width (cm)
+ * @param {number} targetH - desired piece height (cm)
+ * @param {Array} machines - machine list from DB
+ * @param {number} tolerance - max cm to adjust (default 2)
+ * @returns {Array} suggestions sorted by waste%
+ */
+/**
+ * Compare all machines for a given piece size.
+ * Shows how many pieces fit and waste % for each machine.
+ * Sorted by most pieces, then least waste.
+ */
+export function compareMachines(pieceW, pieceH, machines) {
+  return machines
+    .map(machine => {
+      const imp = calculateImposition(pieceW, pieceH, machine);
+      if (imp.piecesPerSheet === 0) return null;
+      return {
+        machine: machine.nombre,
+        paperSize: `${machine.papel_ancho}×${machine.papel_largo}`,
+        pieces: imp.piecesPerSheet,
+        cols: imp.cols,
+        rows: imp.rows,
+        waste: imp.wastePercent,
+        rotated: imp.render.rotated,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.pieces - a.pieces || a.waste - b.waste);
+}
+
+/**
  * Evaluate a piece across ALL machines and rank by best yield.
  */
 export function evaluateAllMachines(pieceW, pieceH, machines) {

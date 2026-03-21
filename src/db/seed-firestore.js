@@ -28,10 +28,12 @@ export default async function seedData() {
 
     // ── Machines ─────────────────────────────────────────────────
     const machines = [
-      { nombre: 'Formato Grande', papel_ancho: 102, papel_largo: 72, impresion_ancho: 101, impresion_largo: 71, plancha_ancho: 102, plancha_largo: 72 },
+      { nombre: 'Formato Grande', papel_ancho: 102, papel_largo: 72, impresion_ancho: 100, impresion_largo: 70, plancha_ancho: 102, plancha_largo: 72 },
       { nombre: 'ZOR MZ',         papel_ancho: 72,  papel_largo: 51, impresion_ancho: 70,  impresion_largo: 50, plancha_ancho: 72.5, plancha_largo: 61 },
-      { nombre: 'José Utrera',    papel_ancho: 64,  papel_largo: 46, impresion_ancho: 64,  impresion_largo: 45, plancha_ancho: 55,  plancha_largo: 65 },
+
       { nombre: 'GTO 4 Colores',  papel_ancho: 52,  papel_largo: 36, impresion_ancho: 51,  impresion_largo: 34, plancha_ancho: 51,  plancha_largo: 40 },
+      { nombre: 'Máquina 70x50',  papel_ancho: 70,  papel_largo: 50, impresion_ancho: 68,  impresion_largo: 48, plancha_ancho: 70,  plancha_largo: 50 },
+      { nombre: 'Máquina 100x60', papel_ancho: 100, papel_largo: 60, impresion_ancho: 98,  impresion_largo: 58, plancha_ancho: 100, plancha_largo: 60 },
     ];
     for (const m of machines) await createMachine(m);
 

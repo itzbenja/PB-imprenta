@@ -4,14 +4,18 @@
  */
 
 import { generateQuotation } from '../engine/quotation.js';
+import { renderImpositionPreview } from './visualizer.js';
+import { compareMachines } from '../engine/imposition.js';
+import { getMachines } from '../engine/pricing.js';
+import { saveCotizacion } from '../db/firestore-api.js';
 
 const COLORES = [
-  { value: '1', doble: false, label: '1x0' },
-  { value: '1', doble: true,  label: '1x1' },
-  { value: '2', doble: false, label: '2x0' },
-  { value: '2', doble: true,  label: '2x2' },
-  { value: '4', doble: false, label: '4x0' },
-  { value: '4', doble: true,  label: '4x4' },
+  { value: '1', doble: false, label: '1x0 — Negro solo frente' },
+  { value: '1', doble: true,  label: '1x1 — Negro ambos lados' },
+  { value: '2', doble: false, label: '2x0 — 2 colores frente' },
+  { value: '2', doble: true,  label: '2x2 — 2 colores ambos lados' },
+  { value: '4', doble: false, label: '4x0 — Full Color frente' },
+  { value: '4', doble: true,  label: '4x4 — Full Color ambos lados' },
 ];
 
 const TIPOS = ['Flyer', 'Libro', 'Agenda'];
@@ -30,6 +34,10 @@ export function renderQuickQuote(container, allData) {
   const tapaOpts = tapaPapers.map((p, i) =>
     `<option value="${i}">${p.nombre_insumo} ${p.gramaje || ''}gr</option>`
   ).join('') || `<option value="0">Sin datos</option>`;
+
+  const machineList = getMachines(allData);
+  const machineOpts = `<option value="">Automático (mejor)</option>` +
+    machineList.map(m => `<option value="${m.nombre}">${m.nombre} (${m.papel_ancho}×${m.papel_largo})</option>`).join('');
 
   const tipoOpts = TIPOS.map(t => `<option value="${t}">${t}</option>`).join('');
   const colorOpts = COLORES.map((c, i) =>
@@ -68,6 +76,7 @@ export function renderQuickQuote(container, allData) {
       marginPercent:           parseInt(row.margen, 10) || 30,
       pruebaDigital:           row.pruebaDigital,
       pruebaDigitalCosto:      row.pruebaDigital ? (parseFloat(row.pruebaCosto) || 15000) : 0,
+      forceMachine:            row.forceMachine || null,
     };
 
     try {
@@ -101,8 +110,16 @@ export function renderQuickQuote(container, allData) {
               <select id="qqTipo" class="qq-select">${tipoOpts}</select>
             </div>
             <div class="qq-field">
-              <label>Tamaño (cm)</label>
-              <input type="text" id="qqTamano" placeholder="21.6x28" class="qq-input" />
+              <label>Máquina</label>
+              <select id="qqMaquina" class="qq-select">${machineOpts}</select>
+            </div>
+            <div class="qq-field">
+              <label>Ancho (cm)</label>
+              <input type="number" id="qqAncho" placeholder="21.6" step="0.1" min="1" class="qq-input" />
+            </div>
+            <div class="qq-field">
+              <label>Largo (cm)</label>
+              <input type="number" id="qqLargo" placeholder="28" step="0.1" min="1" class="qq-input" />
             </div>
             <div class="qq-field">
               <label>Cantidad</label>
@@ -145,6 +162,7 @@ export function renderQuickQuote(container, allData) {
           </div>
           <button id="qqAdd" class="qq-btn-add-full">+ Agregar Cotización</button>
         </div>
+        <div id="qqSugerencias" class="qq-sugerencias"></div>
 
         <!-- ── TABLA DE RESULTADOS ────────────────────────── -->
         ${cotizaciones.length > 0 ? `
@@ -190,6 +208,11 @@ export function renderQuickQuote(container, allData) {
                     <button class="qq-btn-icon qq-btn-del" data-idx="${i}" title="Eliminar">✕</button>
                   </div>
                 </td>
+              </tr>
+              <tr class="qq-viz-row">
+                <td colspan="14">
+                  <div id="qqViz${i}" class="qq-viz-container"></div>
+                </td>
               </tr>`).join('')}
             </tbody>
             <tfoot>
@@ -204,12 +227,24 @@ export function renderQuickQuote(container, allData) {
               </tr>
             </tfoot>
           </table>
+        </div>
+        <div class="qq-actions-row">
+          <button id="qqSave" class="qq-btn-save">Guardar en Firebase</button>
+          <button id="qqPdf" class="qq-btn-pdf">Generar PDF</button>
         </div>` : `
         <div class="qq-empty-state">
           <p>Sin cotizaciones. Complete el formulario y presione <strong>"+ Agregar Cotización"</strong>.</p>
         </div>`}
       </div>
     `;
+
+    // ── RENDER IMPOSITION PREVIEWS ──────────────────────────
+    cotizaciones.forEach((c, i) => {
+      if (c.renderData) {
+        const vizEl = container.querySelector(`#qqViz${i}`);
+        if (vizEl) renderImpositionPreview(vizEl, c.renderData, c.machineName);
+      }
+    });
 
     // ── EVENTS ──────────────────────────────────────────────
     const tipoSelect = container.querySelector('#qqTipo');
@@ -228,12 +263,54 @@ export function renderQuickQuote(container, allData) {
       pruebaCosto.style.display = pruebaCheck.checked ? 'inline-block' : 'none';
     });
 
+    // Comparación de máquinas
+    const anchoInput = container.querySelector('#qqAncho');
+    const largoInput = container.querySelector('#qqLargo');
+    const sugBox = container.querySelector('#qqSugerencias');
+    const machines = getMachines(allData);
+
+    function actualizarComparacion() {
+      const tw = parseFloat(anchoInput.value);
+      const th = parseFloat(largoInput.value);
+      if (!tw || !th || isNaN(tw) || isNaN(th)) {
+        sugBox.innerHTML = '';
+        return;
+      }
+      const results = compareMachines(tw, th, machines);
+      if (results.length === 0) {
+        sugBox.innerHTML = '<p class="qq-sug-empty">La pieza no cabe en ninguna máquina.</p>';
+        return;
+      }
+      sugBox.innerHTML = `
+        <p class="qq-sug-title">Comparación de máquinas para ${tw}×${th} cm:</p>
+        <div class="qq-sug-grid">
+          ${results.map((r, i) => `
+            <button class="qq-sug-card ${i === 0 ? 'qq-sug-better' : ''}" data-machine="${r.machine}">
+              <span class="qq-sug-size">${r.machine}</span>
+              <span class="qq-sug-detail">Papel ${r.paperSize} — ${r.cols}×${r.rows} = ${r.pieces} pzas${r.rotated ? ' ↻' : ''}</span>
+              <span class="qq-sug-waste">Merma: ${r.waste}%${i === 0 ? ' ★ Mejor opción' : ''}</span>
+            </button>`).join('')}
+        </div>`;
+      // Click to select machine
+      sugBox.querySelectorAll('.qq-sug-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelector('#qqMaquina').value = btn.dataset.machine;
+          sugBox.innerHTML = '';
+        });
+      });
+    }
+    anchoInput.addEventListener('input', actualizarComparacion);
+    largoInput.addEventListener('input', actualizarComparacion);
+
     // Agregar
     function agregar() {
-      const tamano = container.querySelector('#qqTamano').value.trim();
+      const ancho = container.querySelector('#qqAncho').value;
+      const largo = container.querySelector('#qqLargo').value;
       const cantidad = container.querySelector('#qqCantidad').value;
-      if (!tamano || !cantidad) return;
+      if (!ancho || !largo || !cantidad) return;
+      const tamano = `${ancho}x${largo}`;
 
+      const forceMachine = container.querySelector('#qqMaquina').value || null;
       const tipo = tipoSelect.value;
       const isEditorial = tipo === 'Libro' || tipo === 'Agenda';
       const papelIntIdx = parseInt(container.querySelector('#qqPapelInt').value, 10);
@@ -266,6 +343,7 @@ export function renderQuickQuote(container, allData) {
         tipo, tamano, cantidad, paginas, papelIntIdx, papelTapaIdx, colorIdx,
         encuadernacion, tiempoEntrega, margen, laminado, pruebaDigital,
         pruebaCosto: pruebaCostoVal, papelIntNombre, papelTapaNombre, colorLabel, terminaciones,
+        forceMachine,
       };
 
       const quote = calcular(row);
@@ -278,7 +356,9 @@ export function renderQuickQuote(container, allData) {
       const iva = quote.iva;
       const total = quote.totalCost;
 
-      cotizaciones.push({ ...row, neto, iva, total });
+      const renderData = quote.interior?.render || null;
+      const machineName = quote.interior?.machine || '';
+      cotizaciones.push({ ...row, neto, iva, total, renderData, machineName });
       render();
     }
 
@@ -305,7 +385,128 @@ export function renderQuickQuote(container, allData) {
       render();
     });
 
-    container.querySelector('#qqTamano')?.focus();
+    // Guardar en Firebase
+    container.querySelector('#qqSave')?.addEventListener('click', async () => {
+      const btn = container.querySelector('#qqSave');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      try {
+        for (const c of cotizaciones) {
+          await saveCotizacion({
+            productType: c.tipo,
+            quantity: parseInt(c.cantidad, 10),
+            dimensions: c.tamano,
+            marginPercent: parseInt(c.margen, 10) || 30,
+            costoPapel: 0,
+            costoProcesos: 0,
+            costoProduccion: c.neto,
+            margenGanancia: Math.round(c.neto * (parseInt(c.margen, 10) || 30) / 130),
+            iva: c.iva,
+            totalCost: c.total,
+            costPerUnit: Math.round(c.total / (parseInt(c.cantidad, 10) || 1)),
+            interior: { machine: c.machineName },
+            finishing: { binding: { type: c.terminaciones } },
+          }, {});
+        }
+        btn.textContent = 'Guardado!';
+        setTimeout(() => { btn.textContent = 'Guardar en Firebase'; btn.disabled = false; }, 2000);
+      } catch (e) {
+        console.error('Error guardando:', e);
+        btn.textContent = 'Error al guardar';
+        btn.disabled = false;
+      }
+    });
+
+    // Generar PDF
+    container.querySelector('#qqPdf')?.addEventListener('click', () => {
+      const totalNeto = cotizaciones.reduce((s, c) => s + c.neto, 0);
+      const totalIva = cotizaciones.reduce((s, c) => s + c.iva, 0);
+      const totalFinal = cotizaciones.reduce((s, c) => s + c.total, 0);
+      const fecha = new Date().toLocaleDateString('es-CL');
+
+      const rows = cotizaciones.map((c, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${c.tipo}</td>
+          <td>${c.tamano.toUpperCase()}</td>
+          <td>${Number(c.cantidad).toLocaleString('es-CL')}</td>
+          <td>${c.paginas || '—'}</td>
+          <td>${c.papelIntNombre}</td>
+          <td>${c.papelTapaNombre || '—'}</td>
+          <td>${c.colorLabel}</td>
+          <td>${c.terminaciones}</td>
+          <td>${c.tiempoEntrega || '—'}</td>
+          <td style="text-align:right">${fmt(c.neto)}</td>
+          <td style="text-align:right">${fmt(c.iva)}</td>
+          <td style="text-align:right;font-weight:700">${fmt(c.total)}</td>
+        </tr>`).join('');
+
+      const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<title>Cotización PB Impresión</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; padding: 40px; color: #1a1a1a; font-size: 12px; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1a5c2e; padding-bottom: 16px; margin-bottom: 24px; }
+  .logo-text { font-size: 22px; font-weight: 700; color: #1a5c2e; }
+  .logo-sub { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .info-box { text-align: right; font-size: 11px; color: #555; }
+  .info-box strong { color: #1a1a1a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { background: #1a5c2e; color: white; padding: 8px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+  td { padding: 8px 6px; border-bottom: 1px solid #e0e0e0; font-size: 11px; }
+  tr:nth-child(even) { background: #f8f8f8; }
+  .totals td { font-weight: 700; border-top: 2px solid #1a5c2e; font-size: 12px; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 10px; color: #888; }
+  .notes { margin-top: 24px; padding: 12px; background: #f5f5f5; border-radius: 6px; font-size: 10px; color: #555; }
+  @media print { body { padding: 20px; } }
+</style></head><body>
+  <div class="header">
+    <div>
+      <div class="logo-text">PB Impresión y Terminación</div>
+      <div class="logo-sub">Cotización de productos gráficos</div>
+    </div>
+    <div class="info-box">
+      <div><strong>Fecha:</strong> ${fecha}</div>
+      <div><strong>Items:</strong> ${cotizaciones.length}</div>
+      <div><strong>Validez:</strong> 15 días</div>
+    </div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>#</th><th>Tipo</th><th>Tamaño</th><th>Cant</th><th>Pág</th>
+      <th>Papel Int.</th><th>Papel Tapa</th><th>Color</th><th>Terminaciones</th>
+      <th>Entrega</th><th style="text-align:right">Neto</th><th style="text-align:right">IVA</th>
+      <th style="text-align:right">Total</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="totals">
+      <td colspan="10" style="text-align:right">TOTALES</td>
+      <td style="text-align:right">${fmt(totalNeto)}</td>
+      <td style="text-align:right">${fmt(totalIva)}</td>
+      <td style="text-align:right">${fmt(totalFinal)}</td>
+    </tr></tfoot>
+  </table>
+  <div class="notes">
+    <strong>Notas:</strong><br/>
+    • Precios en pesos chilenos (CLP), IVA 19% incluido en el total.<br/>
+    • Cotización válida por 15 días desde la fecha de emisión.<br/>
+    • Tiempos de entrega sujetos a confirmación de arte final.
+  </div>
+  <div class="footer">
+    <span>PB Impresión y Terminación</span>
+    <span>Generado el ${fecha}</span>
+  </div>
+</body></html>`;
+
+      const w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => w.print(), 500);
+    });
+
+    container.querySelector('#qqAncho')?.focus();
   }
 
   render();

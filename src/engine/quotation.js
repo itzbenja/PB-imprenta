@@ -41,9 +41,14 @@ export function generateQuotation(allData, params) {
     manualPiecesPerSheet = null,
     pruebaDigital = false,
     pruebaDigitalCosto = 0,
+    forceMachine = null,
   } = params;
 
-  const machines = getMachines(allData);
+  let machines = getMachines(allData);
+  if (forceMachine) {
+    const filtered = machines.filter(m => m.nombre === forceMachine);
+    if (filtered.length > 0) machines = filtered;
+  }
   const isEditorial = productType === 'Libro' || productType === 'Agenda';
   const isAgenda    = productType === 'Agenda';
   const isTalonario = productType === 'Talonario';
