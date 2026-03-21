@@ -103,57 +103,57 @@ export function renderQuickQuote(container, allData) {
         <div class="qq-form-card">
           <div class="qq-form-grid">
             <div class="qq-field">
-              <label>Tipo</label>
+              <label for="qqTipo">Tipo</label>
               <select id="qqTipo" class="qq-select">${tipoOpts}</select>
             </div>
             <div class="qq-field">
-              <label>Máquina</label>
+              <label for="qqMaquina">Máquina</label>
               <select id="qqMaquina" class="qq-select">${machineOpts}</select>
             </div>
             <div class="qq-field">
-              <label>Ancho (cm)</label>
+              <label for="qqAncho">Ancho (cm)</label>
               <input type="number" id="qqAncho" placeholder="21.6" step="0.1" min="1" class="qq-input" />
             </div>
             <div class="qq-field">
-              <label>Largo (cm)</label>
+              <label for="qqLargo">Largo (cm)</label>
               <input type="number" id="qqLargo" placeholder="28" step="0.1" min="1" class="qq-input" />
             </div>
             <div class="qq-field">
-              <label>Cantidad</label>
+              <label for="qqCantidad">Cantidad</label>
               <input type="number" id="qqCantidad" placeholder="200" min="1" class="qq-input" />
             </div>
             <div class="qq-field qq-field-editorial">
-              <label>Páginas int.</label>
+              <label for="qqPaginas">Páginas int.</label>
               <input type="number" id="qqPaginas" placeholder="196" min="2" step="2" class="qq-input" />
             </div>
             <div class="qq-field">
-              <label>Papel interior</label>
+              <label for="qqPapelInt">Papel interior</label>
               <select id="qqPapelInt" class="qq-select">${intOpts}</select>
             </div>
             <div class="qq-field qq-field-editorial">
-              <label>Papel tapa</label>
+              <label for="qqPapelTapa">Papel tapa</label>
               <select id="qqPapelTapa" class="qq-select">${tapaOpts}</select>
             </div>
             <div class="qq-field">
-              <label>Color</label>
+              <label for="qqColor">Color</label>
               <select id="qqColor" class="qq-select">${colorOpts}</select>
             </div>
             <div class="qq-field qq-field-editorial">
-              <label>Encuadernación</label>
+              <label for="qqEnc">Encuadernación</label>
               <select id="qqEnc" class="qq-select">${encOpts}</select>
             </div>
             <div class="qq-field">
-              <label>Entrega</label>
+              <label for="qqEntrega">Entrega</label>
               <input type="text" id="qqEntrega" placeholder="5 días" class="qq-input" />
             </div>
             <div class="qq-field">
-              <label>Margen %</label>
+              <label for="qqMargen">Margen %</label>
               <input type="number" id="qqMargen" value="30" min="0" max="100" class="qq-input" />
             </div>
           </div>
           <div class="qq-checks-row">
-            <label class="qq-check"><input type="checkbox" id="qqLaminado" /> Laminado</label>
-            <label class="qq-check"><input type="checkbox" id="qqPrueba" /> Prueba digital (VB)
+            <label class="qq-toggle"><input type="checkbox" id="qqLaminado" /><span class="qq-toggle-slider"></span><span class="qq-toggle-text">Laminado</span></label>
+            <label class="qq-toggle"><input type="checkbox" id="qqPrueba" /><span class="qq-toggle-slider"></span><span class="qq-toggle-text">Prueba digital (VB)</span></label>
               <input type="number" id="qqPruebaCosto" value="15000" min="0" class="qq-input qq-input-xs" style="display:none;" />
             </label>
           </div>

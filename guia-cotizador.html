@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Guía del Cotizador — PB Impresión</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; font-size: 13px; }
+  .page { padding: 40px 50px; min-height: 100vh; page-break-after: always; position: relative; }
+  .page:last-child { page-break-after: avoid; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 16px; border-bottom: 3px solid #1a5c2e; }
+  .header-logo { font-size: 20px; font-weight: 900; color: #1a5c2e; }
+  .header-logo span { color: #e8a020; }
+  .header-meta { text-align: right; font-size: 10px; color: #777; line-height: 1.6; }
+
+  h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; color: #1a1a2e; }
+  h2 { font-size: 15px; font-weight: 800; margin: 24px 0 10px; color: #1a5c2e; border-left: 4px solid #1a5c2e; padding-left: 10px; }
+  .subtitle { font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.6; }
+
+  .steps { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; background: #f0f7f0; border-radius: 8px; border-left: 3px solid #1a5c2e; }
+  .step-num { font-size: 18px; font-weight: 900; color: #1a5c2e; min-width: 24px; }
+  .step h4 { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .step p { font-size: 11px; color: #444; line-height: 1.5; }
+
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+  .field { background: #f8f9fa; border-radius: 6px; padding: 8px 10px; }
+  .field-name { font-size: 11px; font-weight: 700; color: #1a5c2e; }
+  .field-desc { font-size: 10px; color: #666; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px; }
+  th { background: #1a5c2e; color: #fff; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+
+  .formula { background: #0f1a0f; color: #a8ff78; font-family: 'Courier New', monospace; font-size: 11px; padding: 12px 16px; border-radius: 8px; margin: 10px 0; line-height: 2; }
+
+  .info-box { background: #e8f4ed; border: 1px solid #a8d8b9; border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+  .info-box p { font-size: 11px; color: #1a5c2e; line-height: 1.5; }
+  .warn-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+  .warn-box p { font-size: 11px; color: #7d5a00; line-height: 1.5; }
+
+  .screen { background: #0a1210; border-radius: 10px; padding: 14px 18px; margin: 10px 0; color: #ccc; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.9; }
+  .screen .lbl { color: #888; }
+  .screen .val { color: #fff; }
+  .screen .total { color: #22c55e; font-weight: 700; font-size: 13px; }
+
+  .flow { display: flex; align-items: center; gap: 0; margin: 14px 0; flex-wrap: wrap; }
+  .flow-step { background: #1a5c2e; color: #fff; padding: 7px 12px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+  .flow-arrow { color: #e8a020; font-size: 16px; font-weight: 900; padding: 0 5px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; }
+  .card h3 { font-size: 12px; font-weight: 800; margin-bottom: 6px; color: #1a5c2e; }
+  .card p, .card li { font-size: 10.5px; color: #555; line-height: 1.5; }
+  .card ul { margin-top: 6px; padding-left: 14px; }
+
+  .footer { position: absolute; bottom: 20px; left: 50px; right: 50px; display: flex; justify-content: space-between; font-size: 9px; color: #bbb; border-top: 1px solid #eee; padding-top: 6px; }
+
+  @media print { .page { padding: 25px 35px; } }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PÁGINA 1: PORTADA ═══════════════ -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión y Terminación</span></div>
+    <div class="header-meta">Guía de Funcionamiento<br>Marzo 2026</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;justify-content:center;min-height:70vh;">
+    <div style="background:#1a5c2e;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;display:inline-block;width:fit-content;margin-bottom:16px;">GUÍA DE FUNCIONAMIENTO</div>
+    <h1 style="font-size:34px;line-height:1.1;margin-bottom:12px;">Sistema de Cotización<br>PB Impresión</h1>
+    <p style="font-size:14px;color:#555;margin-bottom:40px;line-height:1.6;">Cómo funciona el módulo <strong>Cotizar</strong> y el panel de <strong>Precios (Admin)</strong>.<br>Guía práctica para vendedores y administradores.</p>
+    <div style="height:3px;background:#1a5c2e;margin-bottom:30px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+      <div style="border-top:2px solid #e8a020;padding-top:8px;">
+        <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;">URL</div>
+        <div style="font-size:13px;font-weight:700;">pb-imprenta.web.app</div>
+      </div>
+      <div style="border-top:2px solid #e8a020;padding-top:8px;">
+        <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;">Productos</div>
+        <div style="font-size:13px;font-weight:700;">Flyer, Libro, Agenda</div>
+      </div>
+      <div style="border-top:2px solid #e8a020;padding-top:8px;">
+        <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;">Precios</div>
+        <div style="font-size:13px;font-weight:700;">Tiempo real (Firebase)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PB Impresión y Terminación</span>
+    <span>Página 1 de 4</span>
+  </div>
+</div>
+
+<!-- ═══════════════ PÁGINA 2: COTIZAR ═══════════════ -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión y Terminación</span></div>
+    <div class="header-meta">Guía de Funcionamiento — Marzo 2026</div>
+  </div>
+
+  <h1>Módulo: Cotizar</h1>
+  <p class="subtitle">El vendedor ingresa los datos del pedido y el sistema calcula automáticamente el precio con precios reales de Firebase.</p>
+
+  <h2>Flujo de cotización</h2>
+  <div class="flow">
+    <div class="flow-step">Ingresar datos</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Motor calcula</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Cortes + Precio</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Guardar / PDF</div>
+  </div>
+
+  <h2>Campos del formulario</h2>
+  <div class="fields">
+    <div class="field">
+      <div class="field-name">Tipo</div>
+      <div class="field-desc">Flyer, Libro o Agenda</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Máquina</div>
+      <div class="field-desc">Automático (mejor) o elegir manualmente</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Ancho / Largo (cm)</div>
+      <div class="field-desc">Tamaño de la pieza terminada</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Cantidad</div>
+      <div class="field-desc">Unidades a producir</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Páginas int.</div>
+      <div class="field-desc">Solo Libro/Agenda. N° de páginas</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Papel interior / tapa</div>
+      <div class="field-desc">Según catálogo cargado en Firebase</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Color</div>
+      <div class="field-desc">1×0, 4×0, 4×4, etc. (frente × dorso)</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Encuadernación</div>
+      <div class="field-desc">Anillado, Cosido, Pegado, Lomo Cuadrado</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Margen %</div>
+      <div class="field-desc">Ganancia sobre el costo (defecto 30%)</div>
+    </div>
+    <div class="field">
+      <div class="field-name">Laminado / Prueba VB</div>
+      <div class="field-desc">Toggles opcionales con costo extra</div>
+    </div>
+  </div>
+
+  <h2>Qué muestra el resultado</h2>
+  <div class="screen">
+    <span class="lbl">Tipo:</span> <span class="val">Libro</span> &nbsp; <span class="lbl">Tamaño:</span> <span class="val">21.6×28</span> &nbsp; <span class="lbl">Cant:</span> <span class="val">200</span> &nbsp; <span class="lbl">Color:</span> <span class="val">4×4</span><br>
+    <span class="lbl">Papel int:</span> <span class="val">Couché 130gr</span> &nbsp; <span class="lbl">Tapa:</span> <span class="val">Couché 300gr</span><br>
+    <span class="lbl">Terminaciones:</span> <span class="val">Laminado, Cosido Lomo Cuadrado, Prueba VB</span><br>
+    <span class="lbl">────────────────────────────────────────</span><br>
+    <span class="lbl">Neto:</span> <span class="val">$548.917</span> &nbsp; <span class="lbl">IVA:</span> <span class="val">$104.294</span> &nbsp; <span class="total">Total: $653.211</span>
+  </div>
+
+  <h2>Visualizador de cortes</h2>
+  <p style="font-size:11px;color:#555;margin-bottom:8px;">Debajo de cada cotización aparece el gráfico de imposición: cuántas piezas entran por pliego y dónde queda la merma.</p>
+  <div style="display:flex;gap:12px;align-items:flex-start;">
+    <div style="flex:1;background:#1a1a1a;border-radius:8px;padding:12px;text-align:center;">
+      <div style="display:inline-grid;grid-template-columns:repeat(4,40px);grid-template-rows:repeat(3,30px);gap:2px;">
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">1</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">2</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">3</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">4</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">5</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">6</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">7</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">8</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">9</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">10</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">11</div>
+        <div style="background:#5a9e3a;border-radius:3px;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;">12</div>
+      </div>
+      <div style="font-size:9px;color:#888;margin-top:6px;">4×3 = 12 piezas por pliego</div>
+    </div>
+    <div style="flex:1;font-size:10.5px;color:#555;line-height:1.7;">
+      <strong>El gráfico muestra:</strong><br>
+      • Piezas verdes = unidades que entran<br>
+      • Zona ámbar = merma (papel desperdiciado)<br>
+      • Datos: máquina, papel, orientación<br>
+      • Si la pieza se rotó 90° lo indica<br><br>
+      <strong>Comparador:</strong> Al ingresar las dimensiones, el sistema muestra todas las máquinas disponibles con sus piezas y merma para elegir la mejor.
+    </div>
+  </div>
+
+  <h2>Acciones</h2>
+  <div class="two-col">
+    <div class="card">
+      <h3>Guardar en Firebase</h3>
+      <p>Guarda la cotización en la base de datos. Se puede ver en el panel Admin → Cotizaciones.</p>
+    </div>
+    <div class="card">
+      <h3>Generar PDF</h3>
+      <p>Abre una ventana con la cotización formateada para imprimir o enviar al cliente como PDF.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PB Impresión y Terminación</span>
+    <span>Página 2 de 4</span>
+  </div>
+</div>
+
+<!-- ═══════════════ PÁGINA 3: COLORES + FÓRMULA ═══════════════ -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión y Terminación</span></div>
+    <div class="header-meta">Guía de Funcionamiento — Marzo 2026</div>
+  </div>
+
+  <h1>Colores y Fórmula de Cálculo</h1>
+
+  <h2>Nomenclatura de colores</h2>
+  <p style="font-size:11px;color:#555;margin-bottom:8px;">El formato <strong>frente × dorso</strong> indica cuántas tintas van en cada lado del papel.</p>
+  <table>
+    <tr><th>Código</th><th>Significado</th><th>Planchas</th><th>Uso típico</th></tr>
+    <tr><td><strong>1×0</strong></td><td>Negro solo frente</td><td>1</td><td>Formularios, recibos</td></tr>
+    <tr><td><strong>1×1</strong></td><td>Negro ambos lados</td><td>2</td><td>Documentos doble cara</td></tr>
+    <tr><td><strong>2×0</strong></td><td>2 colores solo frente</td><td>2</td><td>Logo + negro</td></tr>
+    <tr><td><strong>4×0</strong></td><td>Full Color frente (CMYK)</td><td>4</td><td>Flyers, afiches, tapas</td></tr>
+    <tr><td><strong>4×4</strong></td><td>Full Color ambos lados</td><td>8</td><td>Catálogos, revistas, libros</td></tr>
+  </table>
+
+  <div class="info-box">
+    <p><strong>CMYK:</strong> Cyan, Magenta, Yellow, Key (negro). Son las 4 tintas base de la impresión offset. Cada tinta requiere una plancha.</p>
+  </div>
+
+  <h2>Fórmula de cálculo</h2>
+  <div class="formula">
+Costo Producción  = Papel (interior + tapa) + Planchas + Corte + Terminaciones<br>
+Margen Ganancia   = Costo Producción × Margen%  (configurable, defecto 30%)<br>
+Subtotal          = Costo Producción + Margen<br>
+IVA               = Subtotal × 19%<br>
+──────────────────────────────────────────────────<br>
+TOTAL             = Subtotal + IVA<br>
+Precio unitario   = Total ÷ Cantidad
+  </div>
+
+  <h2>Cálculo de papel</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <h4>Imposición</h4>
+        <p>El motor prueba todas las máquinas (normal y rotada 90°) y elige la que mete más piezas por pliego.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <h4>Pliegos necesarios</h4>
+        <p>Pliegos = Cantidad ÷ Piezas por pliego. Ejemplo: 200 libros ÷ 12 piezas = 17 pliegos.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <h4>Merma</h4>
+        <p>Se agrega 10% extra por ajustes de máquina. 17 pliegos × 1.10 = 19 pliegos finales.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>
+        <h4>Costo</h4>
+        <p>Paquetes = Pliegos ÷ Unidades por paquete. Costo = Paquetes × Precio por paquete (desde Firebase).</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Máquinas disponibles</h2>
+  <table>
+    <tr><th>Máquina</th><th>Papel (cm)</th><th>Área impresión (cm)</th><th>Plancha (cm)</th></tr>
+    <tr><td><strong>Formato Grande</strong></td><td>102 × 72</td><td>100 × 70</td><td>102 × 72</td></tr>
+    <tr><td><strong>Máquina 100×60</strong></td><td>100 × 60</td><td>98 × 58</td><td>100 × 60</td></tr>
+    <tr><td><strong>ZOR MZ</strong></td><td>72 × 51</td><td>70 × 50</td><td>72.5 × 61</td></tr>
+    <tr><td><strong>Máquina 70×50</strong></td><td>70 × 50</td><td>68 × 48</td><td>70 × 50</td></tr>
+    <tr><td><strong>GTO 4 Colores</strong></td><td>52 × 36</td><td>51 × 34</td><td>51 × 40</td></tr>
+  </table>
+
+  <div class="footer">
+    <span>PB Impresión y Terminación</span>
+    <span>Página 3 de 4</span>
+  </div>
+</div>
+
+<!-- ═══════════════ PÁGINA 4: PRECIOS (ADMIN) ═══════════════ -->
+<div class="page">
+  <div class="header">
+    <div class="header-logo">PB <span>Impresión y Terminación</span></div>
+    <div class="header-meta">Guía de Funcionamiento — Marzo 2026</div>
+  </div>
+
+  <h1>Módulo: Precios (Admin)</h1>
+  <p class="subtitle">Panel protegido con login. Permite administrar todos los datos que usa el cotizador.</p>
+
+  <h2>Acceso</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <h4>Click en "Precios" en la barra de navegación</h4>
+        <p>Aparece el formulario de login. Ingrese correo y contraseña del administrador.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <h4>Panel de Administración</h4>
+        <p>Una vez autenticado, se muestran los tabs: Precios, Máquinas, Insumos, Procesos y Cotizaciones.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Secciones del panel</h2>
+  <table>
+    <tr><th>Tab</th><th>Qué contiene</th><th>Para qué sirve</th></tr>
+    <tr>
+      <td><strong>Precios</strong></td>
+      <td>Matriz de precios por proceso y rango de cantidad</td>
+      <td>Definir cuánto cobra cada proceso según volumen (ej: Corte 1–25 = $300, 26–50 = $250)</td>
+    </tr>
+    <tr>
+      <td><strong>Máquinas</strong></td>
+      <td>Impresoras con dimensiones de papel, impresión y plancha</td>
+      <td>El motor usa estas medidas para calcular la imposición (piezas por pliego)</td>
+    </tr>
+    <tr>
+      <td><strong>Insumos</strong></td>
+      <td>Papeles, tintas, materiales con precio y unidades por paquete</td>
+      <td>Actualizar precios de papel cuando cambian los proveedores</td>
+    </tr>
+    <tr>
+      <td><strong>Procesos</strong></td>
+      <td>Operaciones: Corte, Laminado, Anillado, Planchas, etc.</td>
+      <td>Cada proceso tiene un nombre que se referencia en la matriz de precios</td>
+    </tr>
+    <tr>
+      <td><strong>Cotizaciones</strong></td>
+      <td>Historial de cotizaciones guardadas</td>
+      <td>Ver fecha, producto, cantidad, costo y total de cada cotización realizada</td>
+    </tr>
+  </table>
+
+  <h2>Operaciones principales</h2>
+  <div class="two-col">
+    <div class="card">
+      <h3>Re-poblar datos</h3>
+      <p>Carga todos los datos del catálogo original (327 productos de 15 PDFs). Útil si se borró algo por error.</p>
+    </div>
+    <div class="card">
+      <h3>Actualizar un precio</h3>
+      <p>Vaya al tab correspondiente, busque el registro, modifique el valor y guarde. El cotizador usará el nuevo precio inmediatamente.</p>
+    </div>
+    <div class="card">
+      <h3>Agregar una máquina</h3>
+      <p>Tab Máquinas → llene nombre, papel ancho/largo, impresión ancho/largo y plancha ancho/largo → Guardar.</p>
+    </div>
+    <div class="card">
+      <h3>Cerrar sesión</h3>
+      <p>Click en "Salir" en la barra de navegación. El panel se cierra y vuelve al login.</p>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <p><strong>Importante:</strong> Los cambios en precios, máquinas o insumos se reflejan inmediatamente en las nuevas cotizaciones. Las cotizaciones ya guardadas mantienen el precio con el que fueron creadas.</p>
+  </div>
+
+  <h2>Ejemplo: Actualizar precio de papel</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div><p>Login → Tab <strong>Insumos</strong></p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div><p>Buscar el papel (ej: "Couché Opaco 130gr")</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div><p>Cambiar el campo <strong>Costo paquete</strong> al nuevo precio</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div><p>Guardar → La próxima cotización usará el precio actualizado</p></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PB Impresión y Terminación</span>
+    <span>Página 4 de 4</span>
+  </div>
+</div>
+
+</body>
+</html>
