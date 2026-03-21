@@ -72,8 +72,8 @@ export function renderImpositionPreview(container, render, machineName) {
                <rect x="0" y="${(paperH - marginT).toFixed(2)}" width="${paperW}" height="${marginT.toFixed(2)}" fill="#0d0d0d" opacity="0.7"/>`;
   }
 
-  // Right waste zone — amber with label
-  if (wR > 0.5) {
+  // Right waste zone — amber with label (hide if < 1cm)
+  if (wR >= 1) {
     const rx = marginL + usedW;
     const ry = marginT;
     const rcx = rx + wR / 2;
@@ -84,8 +84,8 @@ export function renderImpositionPreview(container, render, machineName) {
         font-size="${labelFs.toFixed(2)}" font-family="monospace" font-weight="bold" fill="#fcd34d">${wR.toFixed(1)}cm</text>`;
   }
 
-  // Bottom waste zone — amber with label
-  if (wB > 0.5) {
+  // Bottom waste zone — amber with label (hide if < 1cm)
+  if (wB >= 1) {
     const bx = marginL;
     const by = marginT + usedH;
     const bcx = bx + usedW / 2;

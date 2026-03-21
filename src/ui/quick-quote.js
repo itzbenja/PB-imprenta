@@ -1,7 +1,4 @@
-/**
- * quick-quote.js — Tabla de Cotización Rápida (vanilla JS).
- * Soporta Flyer, Libro y Agenda con precios reales de Firebase.
- */
+
 
 import { generateQuotation } from '../engine/quotation.js';
 import { renderImpositionPreview } from './visualizer.js';
@@ -330,9 +327,8 @@ export function renderQuickQuote(container, allData) {
 
       const papelIntNombre = intPaper ? `${intPaper.nombre_insumo} ${intPaper.gramaje || ''}gr` : '—';
       const papelTapaNombre = isEditorial && tapaPaper ? `${tapaPaper.nombre_insumo} ${tapaPaper.gramaje || ''}gr` : '';
-      const colorLabel = colorObj ? colorObj.label : '4x4';
+      const colorLabel = colorObj ? colorObj.label.split(' — ')[0] : '4x4';
 
-      // Build terminaciones string
       const terms = [];
       if (laminado) terms.push('Laminado');
       if (isEditorial) terms.push(encuadernacion);
